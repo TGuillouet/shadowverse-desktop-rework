@@ -1,3 +1,4 @@
+use data::config::Config;
 use iced::{
     widget::{container, text},
     Application, Command, Length,
@@ -6,16 +7,18 @@ use iced::{
 #[derive(Debug)]
 pub enum ApplicationMessage {}
 
-pub struct IcedApplication {}
+pub struct IcedApplication {
+    config: Config,
+}
 
 impl Application for IcedApplication {
     type Executor = iced::executor::Default;
     type Message = ApplicationMessage;
     type Theme = crate::theme::Theme;
-    type Flags = ();
+    type Flags = Config;
 
-    fn new(_flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
-        let application = Self {};
+    fn new(flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
+        let application = Self { config: flags };
         (application, Command::none())
     }
 

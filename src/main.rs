@@ -1,8 +1,22 @@
+use data::config::Config;
 use iced::{Application, Settings};
 
 mod app;
 mod theme;
 
 fn main() -> Result<(), iced::Error> {
-    app::IcedApplication::run(Settings::default())
+    let config = Config::load().unwrap();
+
+    let default_settings = Settings::<()>::default();
+    let settings = Settings {
+        id: default_settings.id,
+        window: default_settings.window,
+        flags: config,
+        fonts: default_settings.fonts,
+        default_font: default_settings.default_font,
+        default_text_size: default_settings.default_text_size,
+        antialiasing: default_settings.antialiasing,
+    };
+
+    app::IcedApplication::run(settings)
 }
