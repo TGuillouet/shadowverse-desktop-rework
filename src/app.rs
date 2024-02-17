@@ -4,11 +4,20 @@ use iced::{
     Application, Command, Length,
 };
 
+use crate::screens;
+
 #[derive(Debug)]
-pub enum ApplicationMessage {}
+pub enum ApplicationMessage {
+    CardsList(screens::cards_list::Message),
+}
+
+pub enum AppScreens {
+    CardsList(screens::cards_list::CardsList),
+}
 
 pub struct IcedApplication {
     config: Config,
+    screen: AppScreens,
 }
 
 impl Application for IcedApplication {
@@ -18,7 +27,10 @@ impl Application for IcedApplication {
     type Flags = Config;
 
     fn new(flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
-        let application = Self { config: flags };
+        let application = Self {
+            config: flags,
+            screen: AppScreens::CardsList(screens::cards_list::CardsList::new()),
+        };
         (application, Command::none())
     }
 
@@ -31,7 +43,11 @@ impl Application for IcedApplication {
     }
 
     fn view(&self) -> iced::Element<'_, Self::Message, Self::Theme, iced::Renderer> {
-        container(text("Test"))
+        let screen = match &self.screen {
+            AppScreens::CardsList(screen) => screen.view().map(ApplicationMessage::CardsList),
+        };
+
+        container(screen)
             .width(Length::Fill)
             .height(Length::Fill)
             .into()

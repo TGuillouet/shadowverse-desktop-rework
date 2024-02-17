@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 iced = { version = "0.12.0", features = ["debug"] }
 data = { path = "data" }
+once_cell = "1.19.0"
 
 [workspace]
 members = ["data"]

@@ -2,7 +2,10 @@ use data::config::Config;
 use iced::{Application, Settings};
 
 mod app;
+mod screens;
 mod theme;
+mod widget;
+mod widgets;
 
 fn main() -> Result<(), iced::Error> {
     let config = Config::load().unwrap();
