@@ -7,6 +7,7 @@ use iced::{
     },
     Border, Color, Vector,
 };
+use widgets::table_row;
 
 #[derive(Debug, Clone)]
 struct Palette {
@@ -298,6 +299,21 @@ impl scrollable::StyleSheet for Theme {
                 },
             },
             gap: None,
+        }
+    }
+}
+
+impl table_row::style::Stylesheet for Theme {
+    type Style = ();
+
+    fn active(&self) -> table_row::style::Appearance {
+        table_row::style::Appearance {
+            background: iced::Background::Color(self.palette.background_light),
+            border: Border {
+                color: Color::TRANSPARENT,
+                width: 0.0,
+                radius: 5.0.into(),
+            },
         }
     }
 }

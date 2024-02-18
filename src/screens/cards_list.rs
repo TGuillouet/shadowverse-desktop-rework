@@ -3,6 +3,7 @@ use iced::{
     widget::{column, container, text},
     Length,
 };
+use widgets::table_row::TableRow;
 
 use crate::widget::Element;
 
@@ -28,11 +29,14 @@ impl CardsList {
         let filters = cards_filters();
         let cards_list = cards_list(&self.cards);
 
-        container(column![filters, cards_list].spacing(15))
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .align_x(iced::alignment::Horizontal::Center)
-            .into()
+        let card_row = TableRow::new(cards_list).row_height(40.0);
+
+        container(card_row).into()
+        // container(column![filters, card_row, cards_list].spacing(15))
+        //     .width(Length::Fill)
+        //     .height(Length::Fill)
+        //     .align_x(iced::alignment::Horizontal::Center)
+        //     .into()
     }
 }
 
