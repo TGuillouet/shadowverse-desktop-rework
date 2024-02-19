@@ -7,41 +7,40 @@ use self::style::Stylesheet;
 
 pub mod style;
 
-pub struct TableRow<'a, Message, Theme, Renderer> {
-    row_height: f32,
+pub struct Column {
+    pub name: String,
+    pub resizable: bool,
+    pub width: f32,
+}
+
+impl Column {
+    pub fn new(name: &str) -> Self {
+        Self {
+            name: name.to_string(),
+            resizable: true,
+            width: 150.0,
+        }
+    }
+}
+
+pub struct Header<'a, Message, Theme, Renderer> {
     content: Element<'a, Message, Theme, Renderer>,
 }
 
-impl<'a, Message, Theme, Renderer> TableRow<'a, Message, Theme, Renderer> {
-    pub fn new(content: impl Into<Element<'a, Message, Theme, Renderer>>) -> Self {
-        Self {
-            row_height: 15.0,
-            content: content.into(),
-        }
-    }
-
-    pub fn row_height(mut self, height: f32) -> Self {
-        self.row_height = height;
-        self
+impl<'a, Message, Theme, Renderer> Header<'a, Message, Theme, Renderer> {
+    pub fn new(content: Element<'a, Message, Theme, Renderer>) -> Self {
+        Self { content }
     }
 }
 
 impl<'a, Message, Theme, Renderer> Widget<Message, Theme, Renderer>
-    for TableRow<'a, Message, Theme, Renderer>
+    for Header<'a, Message, Theme, Renderer>
 where
     Theme: Stylesheet,
     Renderer: iced_core::Renderer,
 {
-    fn children(&self) -> Vec<Tree> {
-        vec![Tree::new(&self.content)]
-    }
-
-    fn diff(&self, tree: &mut Tree) {
-        tree.diff_children(std::slice::from_ref(&self.content));
-    }
-
     fn size(&self) -> iced_core::Size<iced_core::Length> {
-        Size::new(Length::Fill, Length::Fixed(self.row_height))
+        Size::new(Length::Fill, Length::Fill)
     }
 
     fn layout(
@@ -54,13 +53,13 @@ where
         let limits = limits
             .loose()
             .width(Length::Fill)
-            .height(Length::Fixed(self.row_height));
+            .height(Length::Fixed(30.0));
 
         let mut content = self
             .content
             .as_widget()
             .layout(&mut tree.children[0], renderer, &limits);
-        let size = limits.resolve(Length::Fill, Length::Fixed(self.row_height), content.size());
+        let size = limits.resolve(Length::Fill, Length::Fixed(30.0), content.size());
 
         content = content
             .move_to(Point::new(padding.left, padding.top))
@@ -109,14 +108,14 @@ where
     }
 }
 
-impl<'a, Message, Theme, Renderer> From<TableRow<'a, Message, Theme, Renderer>>
+impl<'a, Message, Theme, Renderer> From<Header<'a, Message, Theme, Renderer>>
     for Element<'a, Message, Theme, Renderer>
 where
     Message: 'a,
     Theme: Stylesheet + 'a,
     Renderer: renderer::Renderer + 'a,
 {
-    fn from(row: TableRow<'a, Message, Theme, Renderer>) -> Self {
+    fn from(row: Header<'a, Message, Theme, Renderer>) -> Self {
         Self::new(row)
     }
 }
