@@ -100,12 +100,12 @@ impl button::StyleSheet for Theme {
     fn active(&self, style: &Self::Style) -> button::Appearance {
         match style {
             Button::Primary => button::Appearance {
-                background: Some(self.palette.dark_primary.into()),
-                border: Border {
-                    radius: 4.0.into(),
-                    width: 1.0,
-                    color: self.palette.light_primary,
-                },
+                background: None,
+                // border: Border {
+                //     radius: 4.0.into(),
+                //     width: 1.0,
+                //     color: self.palette.light_primary,
+                // },
                 text_color: self.palette.light_primary,
                 ..Default::default()
             },
@@ -141,6 +141,12 @@ impl button::StyleSheet for Theme {
                     ..active_style.border
                 },
                 ..active_style
+            },
+            Button::Primary => button::Appearance {
+                background: Some(iced::Background::Color(self.palette.light_primary)),
+                text_color: self.palette.dark_primary,
+                border: Border::default(),
+                ..Default::default()
             },
             _ => self.active(style),
         }

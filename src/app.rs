@@ -73,7 +73,16 @@ impl Application for IcedApplication {
     }
 
     fn update(&mut self, message: Self::Message) -> iced::Command<Self::Message> {
-        Command::none()
+        println!("{:?}", message);
+        match message {
+            ApplicationMessage::CardsList(message) => {
+                let AppScreens::CardsList(screen) = &mut self.screen else {
+                    return Command::none();
+                };
+
+                screen.update(message).map(ApplicationMessage::CardsList)
+            }
+        }
     }
 
     fn view(&self) -> iced::Element<'_, Self::Message, Self::Theme, iced::Renderer> {

@@ -1,3 +1,4 @@
+#[derive(Debug, Clone)]
 pub struct Card {
     pub id: String,
     pub name: String,
@@ -5,12 +6,13 @@ pub struct Card {
     pub extension: GameExtension,
 }
 
+#[derive(Debug, Clone)]
 pub struct GameExtension {
     pub id: String,
     pub name: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum CardClass {
     Forestcraft,
     Swordcraft,

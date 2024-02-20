@@ -1,10 +1,10 @@
 use data::{
-    cards::{Card, CardClass, GameExtension},
+    cards::Card,
     collection::{CollectionCard, ExtensionProgression},
 };
 use iced::{
     widget::{button, column, container, row, text, Row},
-    Length,
+    Command, Length,
 };
 use widgets::header::Column;
 use widgets::table_row::TableRow;
@@ -12,7 +12,10 @@ use widgets::table_row::TableRow;
 use crate::{theme::Theme, widget::Element};
 
 #[derive(Debug, Clone)]
-pub enum Message {}
+pub enum Message {
+    AddCard(Card),
+    RemoveCard(Card),
+}
 
 pub struct CardsList {
     columns: Vec<Column>,
@@ -29,6 +32,18 @@ impl CardsList {
             ],
             extension_progression,
         }
+    }
+
+    pub fn update(&mut self, message: Message) -> Command<Message> {
+        match message {
+            Message::AddCard(card) => {
+                println!("Add the card: {:?}", card);
+            }
+            Message::RemoveCard(card) => {
+                println!("Remove the card: {:?}", card);
+            }
+        };
+        Command::none()
     }
 
     pub fn view<'a>(&self) -> Element<'a, Message> {
@@ -92,8 +107,12 @@ fn table_row<'a>(card: &Card, is_owned: bool) -> TableRow<'a, Message, Theme, ic
 
     let action_button = if !is_owned {
         button(text("Add"))
+            .padding([0.0, 10.0])
+            .on_press(Message::AddCard(card.clone()))
     } else {
         button(text("Remove"))
+            .padding([0.0, 10.0])
+            .on_press(Message::RemoveCard(card.clone()))
     };
     elements_row = elements_row.push(action_button);
 
