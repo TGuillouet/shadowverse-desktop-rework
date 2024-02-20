@@ -1,8 +1,9 @@
-use data::config::Config;
-use iced::{
-    widget::{container, text},
-    Application, Command, Length,
+use data::{
+    cards::{Card, CardClass, GameExtension},
+    collection::{CollectionCard, ExtensionProgression},
+    config::Config,
 };
+use iced::{widget::container, Application, Command, Length};
 
 use crate::screens;
 
@@ -27,9 +28,42 @@ impl Application for IcedApplication {
     type Flags = Config;
 
     fn new(flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
+        let progression = ExtensionProgression {
+            extension: GameExtension {
+                id: "BP01".to_string(),
+                name: "Advent of genesis".to_string(),
+            },
+            extension_cards: vec![
+                CollectionCard {
+                    card: Card {
+                        id: "BP01-001".to_owned(),
+                        name: String::from("Test card"),
+                        card_class: CardClass::Swordcraft,
+                        extension: GameExtension {
+                            id: "BT01".to_string(),
+                            name: "Advent of genesis".to_string(),
+                        },
+                    },
+                    is_owned: false,
+                },
+                CollectionCard {
+                    card: Card {
+                        id: "BP01-002".to_owned(),
+                        name: String::from("Test card 2"),
+                        card_class: CardClass::Runecraft,
+                        extension: GameExtension {
+                            id: "BT01".to_string(),
+                            name: "Advent of genesis".to_string(),
+                        },
+                    },
+                    is_owned: true,
+                },
+            ],
+        };
+
         let application = Self {
             config: flags,
-            screen: AppScreens::CardsList(screens::cards_list::CardsList::new()),
+            screen: AppScreens::CardsList(screens::cards_list::CardsList::new(progression)),
         };
         (application, Command::none())
     }
