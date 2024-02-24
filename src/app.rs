@@ -3,11 +3,14 @@ use data::{
     collection::{CollectionCard, ExtensionProgression},
     config::Config,
 };
-use iced::{widget::container, Application, Command, Length};
+use iced::{
+    widget::{button, container, row, text},
+    Application, Command, Length,
+};
 
 use crate::screens;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ApplicationMessage {
     CardsList(screens::cards_list::Message),
 }
@@ -73,7 +76,6 @@ impl Application for IcedApplication {
     }
 
     fn update(&mut self, message: Self::Message) -> iced::Command<Self::Message> {
-        println!("{:?}", message);
         match message {
             ApplicationMessage::CardsList(message) => {
                 let AppScreens::CardsList(screen) = &mut self.screen else {

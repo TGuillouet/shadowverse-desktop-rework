@@ -57,8 +57,8 @@ impl CardsList {
 fn cards_filters<'a>() -> Element<'a, Message> {
     container(
         text("Filters")
-            .width(Length::Fill)
-            .horizontal_alignment(iced::alignment::Horizontal::Center),
+            .horizontal_alignment(iced::alignment::Horizontal::Center)
+            .width(Length::Fill),
     )
     .width(Length::Fill)
     .into()
@@ -92,7 +92,7 @@ fn headers<'a>(columns: &Vec<Column>) -> Element<'a, Message> {
 }
 
 fn table_row<'a>(card: &Card, is_owned: bool) -> TableRow<'a, Message, Theme, iced::Renderer> {
-    let mut elements_row = Row::new();
+    let mut elements_row = Row::new().padding([0.0, 10.0]);
     let card_name = text(card.name.clone())
         .width(Length::Fixed(150.0))
         .height(Length::Fill)
