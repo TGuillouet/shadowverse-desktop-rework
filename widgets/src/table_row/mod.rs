@@ -50,7 +50,6 @@ where
         renderer: &Renderer,
         limits: &layout::Limits,
     ) -> layout::Node {
-        let padding: Padding = Padding::from([0.0, 10.0]);
         let limits = limits
             .loose()
             .width(Length::Fill)
@@ -62,15 +61,36 @@ where
             .layout(&mut tree.children[0], renderer, &limits);
         let size = limits.resolve(Length::Fill, Length::Fixed(self.row_height), content.size());
 
-        content = content
-            .move_to(Point::new(padding.left, padding.top))
-            .align(
-                iced_core::Alignment::Start,
-                iced_core::Alignment::Center,
-                size,
-            );
+        content = content.move_to(Point::new(0.0, 0.0)).align(
+            iced_core::Alignment::Start,
+            iced_core::Alignment::Center,
+            size,
+        );
 
         layout::Node::with_children(size, vec![content])
+    }
+
+    fn on_event(
+        &mut self,
+        state: &mut Tree,
+        event: iced_core::Event,
+        layout: iced_core::Layout<'_>,
+        cursor: iced_core::mouse::Cursor,
+        renderer: &Renderer,
+        clipboard: &mut dyn iced_core::Clipboard,
+        shell: &mut iced_core::Shell<'_, Message>,
+        _viewport: &iced_core::Rectangle,
+    ) -> iced_core::event::Status {
+        self.content.as_widget_mut().on_event(
+            &mut state.children[0],
+            event,
+            layout.children().next().unwrap(),
+            cursor,
+            renderer,
+            clipboard,
+            shell,
+            &layout.bounds(),
+        )
     }
 
     fn draw(
@@ -106,6 +126,23 @@ where
             cursor,
             viewport,
         );
+    }
+
+    fn mouse_interaction(
+        &self,
+        state: &Tree,
+        layout: iced_core::Layout<'_>,
+        cursor: iced_core::mouse::Cursor,
+        viewport: &iced_core::Rectangle,
+        renderer: &Renderer,
+    ) -> iced_core::mouse::Interaction {
+        self.content.as_widget().mouse_interaction(
+            &state.children[0],
+            layout,
+            cursor,
+            viewport,
+            renderer,
+        )
     }
 }
 
