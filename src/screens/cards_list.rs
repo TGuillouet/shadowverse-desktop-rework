@@ -1,9 +1,9 @@
 use data::{
-    cards::Card,
+    cards::{Card, CardClass},
     collection::{CollectionCard, ExtensionProgression},
 };
 use iced::{
-    widget::{button, column, container, row, text, Row},
+    widget::{button, column, combo_box, container, row, scrollable, text, text_input, Row},
     Command, Length,
 };
 use widgets::header::Column;
@@ -15,22 +15,30 @@ use crate::{theme::Theme, widget::Element};
 pub enum Message {
     AddCard(Card),
     RemoveCard(Card),
+    Selected(CardClass),
 }
 
 pub struct CardsList {
     columns: Vec<Column>,
     extension_progression: ExtensionProgression,
+    filter_name: String,
+    filter_cards_classes: iced::widget::combo_box::State<CardClass>,
+    filter_card_class: Option<CardClass>,
 }
 
 impl CardsList {
     pub fn new(extension_progression: ExtensionProgression) -> Self {
         Self {
             columns: vec![
+                Column::new("Number"),
                 Column::new("Name"),
                 Column::new("Class"),
                 Column::new("Actions"),
             ],
             extension_progression,
+            filter_name: String::new(),
+            filter_cards_classes: combo_box::State::new(vec![CardClass::Forestcraft]),
+            filter_card_class: None,
         }
     }
 
@@ -42,26 +50,29 @@ impl CardsList {
             Message::RemoveCard(card) => {
                 println!("Remove the card: {:?}", card);
             }
+            Message::Selected(card_class) => {
+                println!("Selecting the card class: {:?}", card_class);
+                self.filter_card_class = Some(card_class);
+            }
         };
         Command::none()
     }
 
-    pub fn view<'a>(&self) -> Element<'a, Message> {
-        let filters = cards_filters();
+    pub fn view<'a>(&'a self) -> Element<'a, Message> {
+        let filters = row![
+            text_input("Card name", &self.filter_name),
+            combo_box(
+                &self.filter_cards_classes,
+                "Card class",
+                self.filter_card_class.as_ref(),
+                Message::Selected
+            )
+        ]
+        .into();
         let cards_list = cards_list(&self.columns, &self.extension_progression.extension_cards);
 
         container(column(vec![filters, cards_list])).into()
     }
-}
-
-fn cards_filters<'a>() -> Element<'a, Message> {
-    container(
-        text("Filters")
-            .horizontal_alignment(iced::alignment::Horizontal::Center)
-            .width(Length::Fill),
-    )
-    .width(Length::Fill)
-    .into()
 }
 
 fn cards_list<'a>(
@@ -73,10 +84,12 @@ fn cards_list<'a>(
         .iter()
         .map(|collection_card| table_row(&collection_card.card, collection_card.is_owned).into())
         .collect();
-    column(vec![headers, column(card_rows).spacing(6.0).into()])
-        .spacing(10.0)
-        .padding(15.0)
-        .into()
+    scrollable(
+        column(vec![headers, column(card_rows).spacing(6.0).into()])
+            .spacing(10.0)
+            .padding(15.0),
+    )
+    .into()
 }
 
 fn headers<'a>(columns: &Vec<Column>) -> Element<'a, Message> {
@@ -93,6 +106,12 @@ fn headers<'a>(columns: &Vec<Column>) -> Element<'a, Message> {
 
 fn table_row<'a>(card: &Card, is_owned: bool) -> TableRow<'a, Message, Theme, iced::Renderer> {
     let mut elements_row = Row::new().padding([0.0, 10.0]);
+    let card_number = text(card.id.clone())
+        .width(Length::Fixed(150.0))
+        .height(Length::Fill)
+        .vertical_alignment(iced::alignment::Vertical::Center);
+    elements_row = elements_row.push(card_number);
+
     let card_name = text(card.name.clone())
         .width(Length::Fixed(150.0))
         .height(Length::Fill)
