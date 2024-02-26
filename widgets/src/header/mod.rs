@@ -10,7 +10,7 @@ pub mod style;
 pub struct Column {
     pub name: String,
     pub resizable: bool,
-    pub width: f32,
+    pub width: Length,
 }
 
 impl Column {
@@ -18,8 +18,13 @@ impl Column {
         Self {
             name: name.to_string(),
             resizable: true,
-            width: 150.0,
+            width: Length::Fixed(150.0),
         }
+    }
+
+    pub fn width(mut self, width: Length) -> Self {
+        self.width = width;
+        self
     }
 }
 

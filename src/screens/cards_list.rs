@@ -34,9 +34,9 @@ impl CardsList {
     pub fn new(extension_progression: ExtensionProgression) -> Self {
         Self {
             columns: vec![
-                Column::new("Number"),
-                Column::new("Name"),
-                Column::new("Class"),
+                Column::new("Number").width(Length::FillPortion(1)),
+                Column::new("Name").width(Length::FillPortion(2)),
+                Column::new("Class").width(Length::FillPortion(1)),
                 Column::new("Actions"),
             ],
             filtered_cards_list: extension_progression.clone().extension_cards,
@@ -89,7 +89,9 @@ impl CardsList {
         .into();
         let cards_list = cards_list(&self.columns, &self.filtered_cards_list);
 
-        container(column(vec![filters, cards_list])).into()
+        container(column(vec![filters, cards_list]))
+            .max_width(800.0)
+            .into()
     }
 
     fn filter_cards_list(&mut self) {
@@ -129,11 +131,7 @@ fn cards_list<'a>(
 fn headers<'a>(columns: &Vec<Column>) -> Element<'a, Message> {
     let columns: Vec<Element<'a, Message>> = columns
         .iter()
-        .map(|column| {
-            text(column.name.to_string())
-                .width(Length::Fixed(column.width))
-                .into()
-        })
+        .map(|column| text(column.name.to_string()).width(column.width).into())
         .collect();
     row(columns).into()
 }
@@ -141,33 +139,31 @@ fn headers<'a>(columns: &Vec<Column>) -> Element<'a, Message> {
 fn table_row<'a>(card: &Card, is_owned: bool) -> TableRow<'a, Message, Theme, iced::Renderer> {
     let mut elements_row = Row::new().padding([0.0, 10.0]);
     let card_number = text(card.id.clone())
-        .width(Length::Fixed(150.0))
+        .width(Length::FillPortion(1))
         .height(Length::Fill)
         .vertical_alignment(iced::alignment::Vertical::Center);
     elements_row = elements_row.push(card_number);
 
     let card_name = text(card.name.clone())
-        .width(Length::Fixed(150.0))
+        .width(Length::FillPortion(2))
         .height(Length::Fill)
         .vertical_alignment(iced::alignment::Vertical::Center);
     elements_row = elements_row.push(card_name);
 
     let class = text(format!("{:?}", card.card_class))
-        .width(Length::Fixed(150.0))
+        .width(Length::FillPortion(1))
         .height(Length::Fill)
         .vertical_alignment(iced::alignment::Vertical::Center);
     elements_row = elements_row.push(class);
 
-    let action_button = if !is_owned {
-        button(text("Add"))
-            .padding([0.0, 10.0])
-            .on_press(Message::AddCard(card.clone()))
+    let mut action_button = if !is_owned {
+        button(text("Add")).on_press(Message::AddCard(card.clone()))
     } else {
-        button(text("Remove"))
-            .padding([0.0, 10.0])
-            .on_press(Message::RemoveCard(card.clone()))
+        button(text("Remove")).on_press(Message::RemoveCard(card.clone()))
     };
-    elements_row = elements_row.push(action_button);
+    action_button = action_button.padding([0.0, 10.0]);
+    let actions_row = row![action_button].width(Length::Fixed(150.0));
+    elements_row = elements_row.push(actions_row);
 
     TableRow::new(elements_row.align_items(iced::Alignment::Center)).row_height(35.0)
 }

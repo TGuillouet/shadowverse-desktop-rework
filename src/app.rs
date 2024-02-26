@@ -95,6 +95,7 @@ impl Application for IcedApplication {
         container(screen)
             .width(Length::Fill)
             .height(Length::Fill)
+            .align_x(iced::alignment::Horizontal::Center)
             .into()
     }
 }
