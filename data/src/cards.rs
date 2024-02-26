@@ -14,7 +14,7 @@ pub struct GameExtension {
     pub name: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CardClass {
     Forestcraft,
     Swordcraft,
@@ -22,6 +22,17 @@ pub enum CardClass {
     Dragoncraft,
     Abysscraft,
     Havencraft,
+}
+
+impl CardClass {
+    pub const ALL: [CardClass; 6] = [
+        CardClass::Forestcraft,
+        CardClass::Swordcraft,
+        CardClass::Dragoncraft,
+        CardClass::Dragoncraft,
+        CardClass::Havencraft,
+        CardClass::Runecraft,
+    ];
 }
 
 impl Display for CardClass {
