@@ -16,14 +16,18 @@ pub enum Message {
     AddCard(Card),
     RemoveCard(Card),
     Selected(CardClass),
+    FilterByName(String),
 }
 
 pub struct CardsList {
     columns: Vec<Column>,
     extension_progression: ExtensionProgression,
+
     filter_name: String,
     filter_cards_classes: iced::widget::combo_box::State<CardClass>,
     filter_card_class: Option<CardClass>,
+
+    filtered_cards_list: Vec<CollectionCard>,
 }
 
 impl CardsList {
@@ -35,9 +39,10 @@ impl CardsList {
                 Column::new("Class"),
                 Column::new("Actions"),
             ],
+            filtered_cards_list: extension_progression.clone().extension_cards,
             extension_progression,
             filter_name: String::new(),
-            filter_cards_classes: combo_box::State::new(vec![CardClass::Forestcraft]),
+            filter_cards_classes: combo_box::State::new(CardClass::ALL.to_vec()),
             filter_card_class: None,
         }
     }
@@ -53,6 +58,14 @@ impl CardsList {
             Message::Selected(card_class) => {
                 println!("Selecting the card class: {:?}", card_class);
                 self.filter_card_class = Some(card_class);
+
+                self.filter_cards_list()
+            }
+            Message::FilterByName(card_name) => {
+                println!("Name filter: {}", &card_name);
+                self.filter_name = card_name;
+
+                self.filter_cards_list()
             }
         };
         Command::none()
@@ -60,18 +73,39 @@ impl CardsList {
 
     pub fn view<'a>(&'a self) -> Element<'a, Message> {
         let filters = row![
-            text_input("Card name", &self.filter_name),
+            text_input("Type the card name here", &self.filter_name)
+                .width(Length::FillPortion(3))
+                .on_input(Message::FilterByName),
             combo_box(
                 &self.filter_cards_classes,
-                "Card class",
+                "Select the card class",
                 self.filter_card_class.as_ref(),
                 Message::Selected
             )
+            .width(Length::FillPortion(1))
         ]
+        .spacing(15.0)
+        .padding(15.0)
         .into();
-        let cards_list = cards_list(&self.columns, &self.extension_progression.extension_cards);
+        let cards_list = cards_list(&self.columns, &self.filtered_cards_list);
 
         container(column(vec![filters, cards_list])).into()
+    }
+
+    fn filter_cards_list(&mut self) {
+        self.filtered_cards_list = self
+            .extension_progression
+            .clone()
+            .extension_cards
+            .into_iter()
+            .filter(|extension_card| {
+                let name_contains_search = extension_card.card.name.contains(&self.filter_name);
+                if let Some(class_search) = self.filter_card_class.as_ref() {
+                    return name_contains_search && &extension_card.card.card_class == class_search;
+                }
+                name_contains_search
+            })
+            .collect();
     }
 }
 
