@@ -22,16 +22,18 @@ pub enum CardClass {
     Dragoncraft,
     Abysscraft,
     Havencraft,
+    Neutral,
 }
 
 impl CardClass {
-    pub const ALL: [CardClass; 6] = [
+    pub const ALL: [CardClass; 7] = [
         CardClass::Forestcraft,
         CardClass::Swordcraft,
         CardClass::Dragoncraft,
         CardClass::Dragoncraft,
         CardClass::Havencraft,
         CardClass::Runecraft,
+        CardClass::Neutral,
     ];
 }
 
@@ -47,6 +49,7 @@ impl Display for CardClass {
                 CardClass::Abysscraft => "Abysscraft",
                 CardClass::Dragoncraft => "Dragoncraft",
                 CardClass::Havencraft => "Havencraft",
+                CardClass::Neutral => "Neutral",
             }
         )
     }
