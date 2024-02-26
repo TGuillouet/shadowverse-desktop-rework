@@ -1,5 +1,6 @@
 use crate::cards::{Card, GameExtension};
 
+#[derive(Debug, Clone)]
 pub struct ExtensionProgression {
     pub extension: GameExtension,
     pub extension_cards: Vec<CollectionCard>,
@@ -27,6 +28,7 @@ impl ExtensionProgression {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct CollectionCard {
     pub card: Card,
     pub is_owned: bool,
