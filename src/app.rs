@@ -37,12 +37,12 @@ impl Application for IcedApplication {
         let progression = get_extensions();
         let application = Self {
             config: flags,
-            // screen: AppScreens::CardsList(screens::cards_list::CardsList::new(
-            //     progression[0].clone(),
-            // )),
-            screen: AppScreens::Extensions(screens::extensions_list::ExtensionsList::new(
-                progression,
+            screen: AppScreens::CardsList(screens::cards_list::CardsList::new(
+                progression[0].clone(),
             )),
+            // screen: AppScreens::Extensions(screens::extensions_list::ExtensionsList::new(
+            //     progression,
+            // )),
         };
         (application, Command::none())
     }
