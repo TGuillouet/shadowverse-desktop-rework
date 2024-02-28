@@ -30,7 +30,7 @@ impl CardClass {
         CardClass::Forestcraft,
         CardClass::Swordcraft,
         CardClass::Dragoncraft,
-        CardClass::Dragoncraft,
+        CardClass::Abysscraft,
         CardClass::Havencraft,
         CardClass::Runecraft,
         CardClass::Neutral,
