@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 dirs-next = "2.0.0"
+rusqlite = { version = "0.31.0", features = ["bundled"] }
 serde = { version = "1.0.196", features = ["derive"] }
 serde_yaml = "0.9.31"
 thiserror = "1.0.57"

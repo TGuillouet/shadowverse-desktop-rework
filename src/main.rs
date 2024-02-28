@@ -1,4 +1,4 @@
-use data::config::Config;
+use data::{config::Config, db::setup_db};
 use iced::{Application, Settings};
 
 mod app;
@@ -9,6 +9,8 @@ mod widgets;
 
 fn main() -> Result<(), iced::Error> {
     let config = Config::load().unwrap();
+
+    setup_db(&config);
 
     let default_settings = Settings::<()>::default();
     let settings = Settings {
