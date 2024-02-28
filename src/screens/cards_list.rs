@@ -51,9 +51,13 @@ impl CardsList {
         match message {
             Message::AddCard(card) => {
                 println!("Add the card: {:?}", card);
+
+                // Save the cards in the extension
             }
             Message::RemoveCard(card) => {
                 println!("Remove the card: {:?}", card);
+
+                // Save the cards in the extension
             }
             Message::Selected(card_class) => {
                 println!("Selecting the card class: {:?}", card_class);
