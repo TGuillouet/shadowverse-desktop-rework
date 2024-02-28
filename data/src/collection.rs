@@ -7,7 +7,7 @@ pub struct ExtensionProgression {
 }
 
 impl ExtensionProgression {
-    fn owned_cards(&self) -> Vec<&Card> {
+    pub fn owned_cards(&self) -> Vec<&Card> {
         self.extension_cards
             .iter()
             .filter(|item| item.is_owned)
@@ -22,9 +22,9 @@ impl ExtensionProgression {
             .collect()
     }
 
-    pub fn progression(&self) -> i32 {
-        let owned_cards_length = self.owned_cards().len();
-        (owned_cards_length / self.extension_cards.len()) as i32
+    pub fn progression(&self) -> f32 {
+        let owned_cards_length = self.owned_cards().len() as f32;
+        owned_cards_length / self.extension_cards.len() as f32
     }
 }
 

@@ -1,6 +1,6 @@
 use data::{
-    cards::{Card, CardClass, GameExtension},
-    collection::{CollectionCard, ExtensionProgression},
+    // cards::{Card, CardClass, GameExtension},
+    // collection::{CollectionCard, ExtensionProgression},
     config::Config,
     db::get_extensions,
 };
@@ -13,10 +13,12 @@ use crate::screens;
 
 #[derive(Debug, Clone)]
 pub enum ApplicationMessage {
+    ExtensionsList(screens::extensions_list::Message),
     CardsList(screens::cards_list::Message),
 }
 
 pub enum AppScreens {
+    Extensions(screens::extensions_list::ExtensionsList),
     CardsList(screens::cards_list::CardsList),
 }
 
@@ -35,8 +37,11 @@ impl Application for IcedApplication {
         let progression = get_extensions();
         let application = Self {
             config: flags,
-            screen: AppScreens::CardsList(screens::cards_list::CardsList::new(
-                progression[0].clone(),
+            // screen: AppScreens::CardsList(screens::cards_list::CardsList::new(
+            //     progression[0].clone(),
+            // )),
+            screen: AppScreens::Extensions(screens::extensions_list::ExtensionsList::new(
+                progression,
             )),
         };
         (application, Command::none())
@@ -48,6 +53,14 @@ impl Application for IcedApplication {
 
     fn update(&mut self, message: Self::Message) -> iced::Command<Self::Message> {
         match message {
+            ApplicationMessage::ExtensionsList(message) => {
+                match message {
+                    screens::extensions_list::Message::ToDetails(extension_progression) => {
+                        println!("To details for {:?}", extension_progression);
+                    }
+                }
+                Command::none()
+            }
             ApplicationMessage::CardsList(message) => {
                 let AppScreens::CardsList(screen) = &mut self.screen else {
                     return Command::none();
@@ -60,6 +73,7 @@ impl Application for IcedApplication {
 
     fn view(&self) -> iced::Element<'_, Self::Message, Self::Theme, iced::Renderer> {
         let screen = match &self.screen {
+            AppScreens::Extensions(screen) => screen.view().map(ApplicationMessage::ExtensionsList),
             AppScreens::CardsList(screen) => screen.view().map(ApplicationMessage::CardsList),
         };
 
