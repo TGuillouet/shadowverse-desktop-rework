@@ -8,6 +8,7 @@ use crate::environment;
 
 pub struct Config {
     api_url: String,
+    pub db_file: PathBuf,
 }
 
 impl Config {
@@ -30,6 +31,9 @@ impl Config {
         // Create the config object
         Ok(Self {
             api_url: configuration.shadowverse_api_url,
+            db_file: environment::config_directory()
+                .join("shadowverse-collection")
+                .join("shadowverse_utils.db"),
         })
     }
 
