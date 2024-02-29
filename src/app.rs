@@ -1,21 +1,16 @@
-use data::{
-    // cards::{Card, CardClass, GameExtension},
-    // collection::{CollectionCard, ExtensionProgression},
-    collection::ExtensionProgression,
-    config::Config,
-    db::get_extensions,
-};
+use data::{collection::ExtensionProgression, config::Config, db::get_extensions};
 use iced::{
-    widget::{button, container, row, text},
+    widget::{container, row},
     Application, Command, Length,
 };
 
-use crate::screens;
+use crate::{screens, widgets::sidebar::sidebar};
 
 #[derive(Debug, Clone)]
 pub enum ApplicationMessage {
     ExtensionsList(screens::extensions_list::Message),
     CardsList(screens::cards_list::Message),
+    OnSidebarClick(String),
 }
 
 pub enum AppScreens {
@@ -29,6 +24,12 @@ pub struct IcedApplication {
 }
 
 impl IcedApplication {
+    fn navigate_to_extensions(&mut self) {
+        let progression = get_extensions(&self.config);
+        self.screen =
+            AppScreens::Extensions(screens::extensions_list::ExtensionsList::new(progression));
+    }
+
     fn navigate_to_progress(&mut self, extension_progression: &ExtensionProgression) {
         self.screen = AppScreens::CardsList(screens::cards_list::CardsList::new(
             extension_progression.clone(),
@@ -77,6 +78,13 @@ impl Application for IcedApplication {
                     .update(&self.config, message)
                     .map(ApplicationMessage::CardsList)
             }
+            ApplicationMessage::OnSidebarClick(screen_key) => {
+                match screen_key.as_str() {
+                    "progressions" => self.navigate_to_extensions(),
+                    _ => self.navigate_to_extensions(),
+                };
+                Command::none()
+            }
         }
     }
 
@@ -86,10 +94,14 @@ impl Application for IcedApplication {
             AppScreens::CardsList(screen) => screen.view().map(ApplicationMessage::CardsList),
         };
 
-        container(screen)
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .align_x(iced::alignment::Horizontal::Center)
-            .into()
+        let sidebar = sidebar();
+
+        container(row![
+            sidebar,
+            container(screen).align_x(iced::alignment::Horizontal::Center)
+        ])
+        .width(Length::Fill)
+        .height(Length::Fill)
+        .into()
     }
 }
