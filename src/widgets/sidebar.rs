@@ -10,19 +10,14 @@ use crate::{
 };
 
 pub fn sidebar<'a>() -> Container<'a, ApplicationMessage> {
-    let top_container = container(column![]).height(Length::FillPortion(3));
-    let middle_container = container(column![sidebar_button("Progression", "progression"),])
-        .height(Length::FillPortion(5))
-        .align_y(iced::alignment::Vertical::Center);
-    let bottom_container = container(column![]).height(Length::FillPortion(3));
-    container(
-        column![top_container, middle_container, bottom_container]
-            .padding(10)
-            .spacing(10),
-    )
-    .style(theme::Container::Sidebar)
-    .width(Length::Fixed(250.0))
-    .height(Length::Fill)
+    let buttons_container =
+        container(column![sidebar_button("Progression", "progression"),]).height(Length::Fill);
+
+    container(buttons_container)
+        .style(theme::Container::Sidebar)
+        .padding(15.0)
+        .width(Length::Fixed(250.0))
+        .height(Length::Fill)
 }
 
 fn sidebar_button<'a>(label: &'a str, key: &str) -> Button<'a, ApplicationMessage> {
