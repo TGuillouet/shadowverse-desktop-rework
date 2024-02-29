@@ -2,45 +2,56 @@ use crate::{
     cards::{Card, CardClass, GameExtension},
     collection::{CollectionCard, ExtensionProgression},
     config::Config,
-    environment::config_directory,
 };
 use rusqlite::Connection;
 
-pub fn setup_db(config: &Config) {
+pub fn setup_db(config: &Config) -> Result<(), ()> {
     let connection =
         Connection::open(config.db_file.clone()).expect("Could open the database file");
 
-    // TODO: Use execute_batch to create a transaction
-    let extension_table_result = connection.execute(
-        "CREATE TABLE IF NOT EXISTS extension (
+    let db_setup_result = connection.execute_batch(
+        "BEGIN;
+        CREATE TABLE IF NOT EXISTS extension (
             id VARCHAR(50) PRIMARY KEY,
             name VARCHAR(100) NOT NULL
-        )",
-        (),
-    );
-
-    let cards_table_result = connection.execute(
-        "CREATE TABLE IF NOT EXISTS card (
+        );
+        CREATE TABLE IF NOT EXISTS card (
             id TEXT PRIMARY KEY,
             name VARCHAR(100) NOT NULL,
             card_class VARCHAR(50) NOT NULL,
             extension_id VARCHAR(50),
             FOREIGN KEY (extension_id) REFERENCES extension (id)
-        )",
-        (),
-    );
-
-    let collected_cards = connection.execute(
-        "CREATE TABLE IF NOT EXISTS collected_cards (
+        );
+        CREATE TABLE IF NOT EXISTS collected_cards (
             card_id VARCHAR(50),
             is_owned INTEGER,
             FOREIGN KEY (card_id) REFERENCES card (id)
-        )",
-        (),
+        );
+        COMMIT;",
     );
+
+    if let Err(error) = db_setup_result {
+        println!("{}", error);
+        return Err(());
+    }
+
+    Ok(())
 }
 
-pub fn get_extensions() -> Vec<ExtensionProgression> {
+pub fn get_extensions(config: &Config) -> Vec<ExtensionProgression> {
+    let connection =
+        Connection::open(config.db_file.clone()).expect("Could open the database file");
+
+    // Get the extensions from the db
+    let mut statement = connection
+        .prepare("SELECT * FROM card INNER JOIN extension ON extension.id = card.extension_id")
+        .unwrap();
+    let res = statement.query_map([], |row| Ok(row.get::<&str, String>("card.id").unwrap()));
+    // Convert the rows to a Vec<ExtensionProgression>
+    for id in res.unwrap() {
+        println!("{}", id.unwrap());
+    }
+
     vec![
         ExtensionProgression {
             extension: GameExtension {

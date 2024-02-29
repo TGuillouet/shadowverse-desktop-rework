@@ -34,21 +34,21 @@ impl Application for IcedApplication {
     type Flags = Config;
 
     fn new(flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
-        let progression = get_extensions();
+        let progression = get_extensions(&flags);
         let application = Self {
             config: flags,
-            screen: AppScreens::CardsList(screens::cards_list::CardsList::new(
-                progression[0].clone(),
-            )),
-            // screen: AppScreens::Extensions(screens::extensions_list::ExtensionsList::new(
-            //     progression,
+            // screen: AppScreens::CardsList(screens::cards_list::CardsList::new(
+            //     progression[0].clone(),
             // )),
+            screen: AppScreens::Extensions(screens::extensions_list::ExtensionsList::new(
+                progression,
+            )),
         };
         (application, Command::none())
     }
 
     fn title(&self) -> String {
-        "Iced test architecture".into()
+        "Shadowverse utils".into()
     }
 
     fn update(&mut self, message: Self::Message) -> iced::Command<Self::Message> {
