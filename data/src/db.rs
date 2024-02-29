@@ -1,5 +1,5 @@
 use crate::{
-    cards::{Card, CardClass, GameExtension},
+    cards::{Card, GameExtension},
     collection::{CollectionCard, ExtensionProgression},
     config::Config,
 };
@@ -38,84 +38,68 @@ pub fn setup_db(config: &Config) -> Result<(), ()> {
     Ok(())
 }
 
+fn get_extension_cards(connection: &Connection, extension: &GameExtension) -> Vec<CollectionCard> {
+    let mut statement = connection
+        .prepare(
+            "SELECT 
+                *,
+                cc.is_owned,
+                e.id as extension_id,
+                e.name as extension_name
+            FROM card
+            INNER JOIN extension e ON e.id = card.extension_id
+            INNER JOIN collected_cards cc ON cc.card_id = card.id
+            WHERE e.id = ?",
+        )
+        .unwrap();
+    let res = statement.query_map([&extension.id], |row| {
+        let extension = GameExtension {
+            id: row.get_unwrap("extension_id"),
+            name: row.get_unwrap("extension_name"),
+        };
+        let card = Card {
+            id: row.get_unwrap("id"),
+            extension,
+            card_class: row.get_unwrap("card_class"),
+            name: row.get_unwrap("name"),
+        };
+        let collection_card = CollectionCard {
+            card,
+            is_owned: row.get_unwrap("is_owned"),
+        };
+        Ok(collection_card)
+    });
+
+    let mut collected_cards = Vec::new();
+    for card in res.unwrap() {
+        collected_cards.push(card.unwrap());
+    }
+    collected_cards
+}
+
 pub fn get_extensions(config: &Config) -> Vec<ExtensionProgression> {
     let connection =
         Connection::open(config.db_file.clone()).expect("Could open the database file");
 
     // Get the extensions from the db
-    let mut statement = connection
-        .prepare("SELECT * FROM card INNER JOIN extension ON extension.id = card.extension_id")
-        .unwrap();
-    let res = statement.query_map([], |row| Ok(row.get::<&str, String>("card.id").unwrap()));
+    let mut statement = connection.prepare("SELECT * FROM extension").unwrap();
+    let res = statement.query_map([], |row| {
+        Ok(GameExtension {
+            id: row.get_unwrap("id"),
+            name: row.get_unwrap("name"),
+        })
+    });
+
     // Convert the rows to a Vec<ExtensionProgression>
-    for id in res.unwrap() {
-        println!("{}", id.unwrap());
+    let mut extensions: Vec<ExtensionProgression> = Vec::new();
+    for extension in res.unwrap() {
+        let extension = extension.unwrap();
+        let cards = get_extension_cards(&connection, &extension);
+        extensions.push(ExtensionProgression {
+            extension,
+            extension_cards: cards,
+        })
     }
 
-    vec![
-        ExtensionProgression {
-            extension: GameExtension {
-                id: "BP02".to_string(),
-                name: "Rage of bahamut".to_string(),
-            },
-            extension_cards: vec![
-                CollectionCard {
-                    card: Card {
-                        id: "BP02-001".to_owned(),
-                        name: String::from("Test card"),
-                        card_class: CardClass::Swordcraft,
-                        extension: GameExtension {
-                            id: "BT02".to_string(),
-                            name: "Rage of bahamut".to_string(),
-                        },
-                    },
-                    is_owned: false,
-                },
-                CollectionCard {
-                    card: Card {
-                        id: "BP02-002".to_owned(),
-                        name: String::from("Test card 2"),
-                        card_class: CardClass::Runecraft,
-                        extension: GameExtension {
-                            id: "BT02".to_string(),
-                            name: "Rage of bahamut".to_string(),
-                        },
-                    },
-                    is_owned: true,
-                },
-            ],
-        },
-        ExtensionProgression {
-            extension: GameExtension {
-                id: "BP01".to_string(),
-                name: "Advent of genesis".to_string(),
-            },
-            extension_cards: vec![
-                CollectionCard {
-                    card: Card {
-                        id: "BP01-001".to_owned(),
-                        name: String::from("Test card"),
-                        card_class: CardClass::Swordcraft,
-                        extension: GameExtension {
-                            id: "BT01".to_string(),
-                            name: "Advent of genesis".to_string(),
-                        },
-                    },
-                    is_owned: false,
-                },
-                CollectionCard {
-                    card: Card {
-                        id: "BP01-002".to_owned(),
-                        name: String::from("Test card 2"),
-                        card_class: CardClass::Runecraft,
-                        extension: GameExtension {
-                            id: "BT01".to_string(),
-                            name: "Advent of genesis".to_string(),
-                        },
-                    },
-                    is_owned: true,
-                },
-            ],
-        },
-    ]
+    extensions
 }
