@@ -1,5 +1,7 @@
 use std::fmt::Display;
 
+use rusqlite::types::{FromSql, ValueRef};
+
 #[derive(Debug, Clone)]
 pub struct Card {
     pub id: String,
@@ -23,6 +25,26 @@ pub enum CardClass {
     Abysscraft,
     Havencraft,
     Neutral,
+}
+
+impl FromSql for CardClass {
+    fn column_result(value: rusqlite::types::ValueRef<'_>) -> rusqlite::types::FromSqlResult<Self> {
+        if let ValueRef::Text(value) = value {
+            let value = String::from_utf8(value.to_vec()).unwrap_or_default();
+            let class = match value.as_str() {
+                "Forestcraft" => CardClass::Forestcraft,
+                "Swordcraft" => CardClass::Swordcraft,
+                "Dragoncraft" => CardClass::Dragoncraft,
+                "Abysscraft" => CardClass::Abysscraft,
+                "Havencraft" => CardClass::Havencraft,
+                "Runecraft" => CardClass::Runecraft,
+                _ => CardClass::Neutral,
+            };
+            return Ok(class);
+        }
+
+        Ok(CardClass::Neutral)
+    }
 }
 
 impl CardClass {
