@@ -27,7 +27,7 @@ pub fn setup_db(config: &Config) -> Result<(), ()> {
             is_owned INTEGER,
             FOREIGN KEY (card_id) REFERENCES card (id)
         );
-        CREATE UNIQUE INDEX collected_cards_card_id_IDX ON collected_cards (card_id);
+        CREATE UNIQUE INDEX IF NOT EXISTS collected_cards_card_id_IDX ON collected_cards (card_id);
         COMMIT;",
     );
 
