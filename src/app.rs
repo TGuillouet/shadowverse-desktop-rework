@@ -1,6 +1,7 @@
 use data::{
     // cards::{Card, CardClass, GameExtension},
     // collection::{CollectionCard, ExtensionProgression},
+    collection::ExtensionProgression,
     config::Config,
     db::get_extensions,
 };
@@ -27,6 +28,14 @@ pub struct IcedApplication {
     screen: AppScreens,
 }
 
+impl IcedApplication {
+    fn navigate_to_progress(&mut self, extension_progression: &ExtensionProgression) {
+        self.screen = AppScreens::CardsList(screens::cards_list::CardsList::new(
+            extension_progression.clone(),
+        ))
+    }
+}
+
 impl Application for IcedApplication {
     type Executor = iced::executor::Default;
     type Message = ApplicationMessage;
@@ -37,9 +46,6 @@ impl Application for IcedApplication {
         let progression = get_extensions(&flags);
         let application = Self {
             config: flags,
-            // screen: AppScreens::CardsList(screens::cards_list::CardsList::new(
-            //     progression[0].clone(),
-            // )),
             screen: AppScreens::Extensions(screens::extensions_list::ExtensionsList::new(
                 progression,
             )),
@@ -57,6 +63,7 @@ impl Application for IcedApplication {
                 match message {
                     screens::extensions_list::Message::ToDetails(extension_progression) => {
                         println!("To details for {:?}", extension_progression);
+                        self.navigate_to_progress(&extension_progression);
                     }
                 }
                 Command::none()
