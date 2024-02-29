@@ -36,6 +36,7 @@ impl CardsList {
     pub fn new(extension_progression: ExtensionProgression) -> Self {
         Self {
             columns: vec![
+                Column::new("Owned").width(Length::FillPortion(1)),
                 Column::new("Number").width(Length::FillPortion(1)),
                 Column::new("Name").width(Length::FillPortion(2)),
                 Column::new("Class").width(Length::FillPortion(1)),
@@ -158,6 +159,15 @@ fn headers<'a>(columns: &Vec<Column>) -> Element<'a, Message> {
 
 fn table_row<'a>(card: &Card, is_owned: bool) -> TableRow<'a, Message, Theme, iced::Renderer> {
     let mut elements_row = Row::new().padding([0.0, 10.0]);
+
+    let owned_graphic = if is_owned { text("O") } else { text("X") };
+    elements_row = elements_row.push(
+        owned_graphic
+            .vertical_alignment(iced::alignment::Vertical::Center)
+            .width(Length::FillPortion(1))
+            .height(Length::Fill),
+    );
+
     let card_number = text(card.id.clone())
         .width(Length::FillPortion(1))
         .height(Length::Fill)
