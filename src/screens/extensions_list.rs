@@ -1,6 +1,6 @@
 use data::collection::ExtensionProgression;
 use iced::{
-    widget::{button, column, progress_bar, row, scrollable, text},
+    widget::{button, column, container, progress_bar, row, scrollable, text},
     Length,
 };
 
@@ -30,7 +30,10 @@ impl ExtensionsList {
             .map(|progress| extension_progress(&progress))
             .collect();
 
-        scrollable(column(extensions_widgets)).into()
+        container(scrollable(column(extensions_widgets)))
+            .padding([15.0, 0.0])
+            .max_width(800.0)
+            .into()
     }
 }
 
