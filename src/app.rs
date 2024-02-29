@@ -73,7 +73,9 @@ impl Application for IcedApplication {
                     return Command::none();
                 };
 
-                screen.update(message).map(ApplicationMessage::CardsList)
+                screen
+                    .update(&self.config, message)
+                    .map(ApplicationMessage::CardsList)
             }
         }
     }

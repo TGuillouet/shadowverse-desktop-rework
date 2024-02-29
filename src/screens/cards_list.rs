@@ -1,6 +1,8 @@
 use data::{
     cards::{Card, CardClass},
     collection::{CollectionCard, ExtensionProgression},
+    config::Config,
+    db::get_extension,
 };
 use iced::{
     widget::{button, column, combo_box, container, row, scrollable, text, text_input, Row},
@@ -47,17 +49,31 @@ impl CardsList {
         }
     }
 
-    pub fn update(&mut self, message: Message) -> Command<Message> {
+    pub fn update(&mut self, config: &Config, message: Message) -> Command<Message> {
         match message {
             Message::AddCard(card) => {
                 println!("Add the card: {:?}", card);
 
                 // Save the cards in the extension
+                data::db::add_card_to_collection(config, card);
+
+                // Update the list
+                self.extension_progression =
+                    get_extension(config, &self.extension_progression.extension.id);
+                self.filtered_cards_list = self.extension_progression.extension_cards.clone();
+                self.filter_cards_list()
             }
             Message::RemoveCard(card) => {
                 println!("Remove the card: {:?}", card);
 
                 // Save the cards in the extension
+                data::db::remove_card_from_collection(config, card);
+
+                // Update the list
+                self.extension_progression =
+                    get_extension(config, &self.extension_progression.extension.id);
+                self.filtered_cards_list = self.extension_progression.extension_cards.clone();
+                self.filter_cards_list()
             }
             Message::Selected(card_class) => {
                 println!("Selecting the card class: {:?}", card_class);

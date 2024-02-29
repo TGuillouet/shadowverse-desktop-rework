@@ -27,6 +27,7 @@ pub fn setup_db(config: &Config) -> Result<(), ()> {
             is_owned INTEGER,
             FOREIGN KEY (card_id) REFERENCES card (id)
         );
+        CREATE UNIQUE INDEX collected_cards_card_id_IDX ON collected_cards (card_id);
         COMMIT;",
     );
 
@@ -102,4 +103,64 @@ pub fn get_extensions(config: &Config) -> Vec<ExtensionProgression> {
     }
 
     extensions
+}
+
+pub fn get_extension(config: &Config, extension_id: &str) -> ExtensionProgression {
+    let connection =
+        Connection::open(config.db_file.clone()).expect("Could open the database file");
+
+    // Get the extension from the db
+    let mut statement = connection
+        .prepare("SELECT * FROM extension WHERE id = ?")
+        .unwrap();
+    let res = statement.query_row([extension_id], |row| {
+        Ok(GameExtension {
+            id: row.get_unwrap("id"),
+            name: row.get_unwrap("name"),
+        })
+    });
+
+    let extension = res.unwrap();
+    let cards = get_extension_cards(&connection, &extension);
+
+    ExtensionProgression {
+        extension,
+        extension_cards: cards,
+    }
+}
+
+pub fn remove_card_from_collection(config: &Config, card: Card) -> Result<(), ()> {
+    let connection =
+        Connection::open(config.db_file.clone()).expect("Could open the database file");
+
+    let result = connection.execute(
+        "INSERT INTO 
+            collected_cards (card_id, is_owned)
+        VALUES (?, ?)
+        ON CONFLICT (card_id)
+            DO UPDATE SET is_owned = excluded.is_owned",
+        (&card.id, false),
+    );
+
+    println!("{:?}", result);
+
+    Ok(())
+}
+
+pub fn add_card_to_collection(config: &Config, card: Card) -> Result<(), ()> {
+    let connection =
+        Connection::open(config.db_file.clone()).expect("Could open the database file");
+
+    let result = connection.execute(
+        "INSERT INTO 
+            collected_cards (card_id, is_owned)
+        VALUES (?, ?)
+        ON CONFLICT (card_id)
+            DO UPDATE SET is_owned = excluded.is_owned",
+        (&card.id, true),
+    );
+
+    println!("{:?}", result);
+
+    Ok(())
 }
