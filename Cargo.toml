@@ -9,7 +9,8 @@ edition = "2021"
 iced = { version = "0.12.0", features = ["debug"] }
 data = { path = "data" }
 widgets = { path = "widgets" }
+cards_updater = { path = "cards_updater" }
 once_cell = "1.19.0"
 
 [workspace]
-members = ["data", "widgets"]
+members = [ "cards_updater", "data", "widgets" ]
