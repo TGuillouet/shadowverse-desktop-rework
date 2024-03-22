@@ -4,18 +4,19 @@ use scraper::selectable::Selectable;
 
 use crate::get_number_of_cards::get_number_of_cards;
 
+// TODO: Create an error kind with thiserror and delete all the .unwrap()
+
 const CARDS_PER_PAGE: u32 = 15;
 const PAGE_API_URL: &str = "https://en.shadowverse-evolve.com/cards/searchresults_ex?card_name=&class%5B0%5D=all&title=&expansion_name=&cost%5B0%5D=all&card_kind%5B0%5D=all&rare%5B0%5D=all&power_from=&power_to=&hp_from=&hp_to=&type=&ability=&keyword=&view=text&t=1711058152734&_=1711057240616";
 const DETAIL_PAGE_URL: &str = "https://en.shadowverse-evolve.com/cards/?cardno=";
 
-pub fn get_cards(covers_directory: &PathBuf) -> Vec<String> {
+pub fn get_cards() -> Vec<String> {
     let number_of_cards = get_number_of_cards().unwrap();
-
-    download_card("BP03-001EN", covers_directory);
-
-    get_cards_list(number_of_cards) // Get all the card numbers
+    let cards_list = get_cards_list(number_of_cards); // Get all the card numbers
+    cards_list
 }
 
+// TODO: Return the database model without saving it
 pub fn download_card(card_number: &str, covers_directory: &PathBuf) {
     // Extract the data from the card detail page
     let response = ureq::get(&format!("{}{}", DETAIL_PAGE_URL, card_number))
@@ -53,11 +54,6 @@ pub fn download_card(card_number: &str, covers_directory: &PathBuf) {
         .unwrap();
 
     let cover = get_image(&card_number, covers_directory);
-    // let cover = html_card
-    //     .select(&scraper::Selector::parse(".cardlist-Detail img").unwrap())
-    //     .next()
-    //     .map(|p| p.().collect::<String>()) // TODO: find a way to get the images too
-    //     .unwrap();
 
     // TODO: Save the images in the application directory
     // TODO: Save the entries in the database
@@ -107,40 +103,3 @@ fn get_image(card_number: &str, output_directory: &PathBuf) {
 
     std::io::copy(&mut response, &mut BufWriter::new(&mut out_file));
 }
-
-// fn get_card_detail(card_number: &str) {
-//for html_card in html_cards {
-//     let name = html_card
-//         .select(&scraper::Selector::parse(".ttl").unwrap())
-//         .next()
-//         .map(|p| p.text().collect::<String>())
-//         .unwrap();
-//
-//     let card_number = html_card
-//         .select(&scraper::Selector::parse(".number").unwrap())
-//         .next()
-//         .map(|p| p.text().collect::<String>())
-//         .unwrap();
-//
-//     // TODO: Find a way to get the card class
-//
-//     let infos_selector = scraper::Selector::parse(".status span").unwrap();
-//     let mut infos = html_card.select(&infos_selector);
-//
-//     let card_type = infos.next().map(|p| p.text().collect::<String>()).unwrap();
-//     let card_trait = infos.next().map(|p| p.text().collect::<String>()).unwrap();
-//     let card_rarity = infos.next().map(|p| p.text().collect::<String>()).unwrap();
-//
-//     let detail = html_card
-//         .select(&scraper::Selector::parse(".detail").unwrap())
-//         .next()
-//         .map(|p| p.text().collect::<String>()) // TODO: find a way to get the images too
-//         .unwrap();
-//
-//     println!(
-//         "{} - {} - {} - {} - {}",
-//         card_number, name, card_type, card_trait, card_rarity
-//     );
-// }
-
-// }
