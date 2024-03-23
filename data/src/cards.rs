@@ -7,6 +7,10 @@ pub struct Card {
     pub id: String,
     pub name: String,
     pub card_class: CardClass,
+    pub card_type: String,
+    pub rarity: String,
+    pub card_trait: String,
+    pub details: String,
     pub extension: GameExtension,
 }
 
@@ -25,6 +29,20 @@ pub enum CardClass {
     Abysscraft,
     Havencraft,
     Neutral,
+}
+
+impl From<String> for CardClass {
+    fn from(value: String) -> Self {
+        match value.as_str() {
+            "Forestcraft" => CardClass::Forestcraft,
+            "Swordcraft" => CardClass::Swordcraft,
+            "Dragoncraft" => CardClass::Dragoncraft,
+            "Abysscraft" => CardClass::Abysscraft,
+            "Havencraft" => CardClass::Havencraft,
+            "Runecraft" => CardClass::Runecraft,
+            _ => CardClass::Neutral,
+        }
+    }
 }
 
 impl FromSql for CardClass {

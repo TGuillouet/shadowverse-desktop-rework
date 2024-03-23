@@ -1,5 +1,6 @@
 use std::{fmt::format, fs::File, io::BufWriter, path::PathBuf};
 
+use data::cards::{Card, CardClass, GameExtension};
 use scraper::selectable::Selectable;
 
 use crate::get_number_of_cards::get_number_of_cards;
@@ -17,7 +18,7 @@ pub fn get_cards() -> Vec<String> {
 }
 
 // TODO: Return the database model without saving it
-pub fn download_card(card_number: &str, covers_directory: &PathBuf) {
+pub fn download_card(card_number: &str, covers_directory: &PathBuf) -> Card {
     // Extract the data from the card detail page
     let response = ureq::get(&format!("{}{}", DETAIL_PAGE_URL, card_number))
         .call()
@@ -47,20 +48,34 @@ pub fn download_card(card_number: &str, covers_directory: &PathBuf) {
     let card_rarity = infos.next().map(|p| p.text().collect::<String>()).unwrap();
     let card_extension = infos.next().map(|p| p.text().collect::<String>()).unwrap();
 
-    let detail = html_card
+    let details = html_card
         .select(&scraper::Selector::parse(".detail p").unwrap())
         .next()
-        .map(|p| p.text().collect::<String>()) // TODO: find a way to get the images too
-        .unwrap();
+        .map(|p| p.html()) // TODO: find a way to get the images too
+        .unwrap()
+        .to_string();
 
-    let cover = get_image(&card_number, covers_directory);
+    get_image(&card_number, covers_directory);
 
-    // TODO: Save the images in the application directory
-    // TODO: Save the entries in the database
-    println!(
-        "{} - {} - {} - {} - {} - {} - {}",
-        card_class, card_number, name, card_type, card_trait, card_rarity, card_extension
-    );
+    let extension_id = get_extension_id(&card_number);
+
+    Card {
+        id: card_number.clone(),
+        name,
+        card_class: CardClass::from(card_class),
+        card_type,
+        card_trait,
+        rarity: card_rarity,
+        details,
+        extension: GameExtension {
+            id: extension_id.to_string(),
+            name: card_extension,
+        },
+    }
+}
+
+fn get_extension_id(card_number: &str) -> &str {
+    card_number.split("-").next().unwrap()
 }
 
 fn get_cards_list(number_of_cards: u32) -> Vec<String> {

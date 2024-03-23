@@ -19,6 +19,10 @@ pub fn setup_db(config: &Config) -> Result<(), ()> {
             id TEXT PRIMARY KEY,
             name VARCHAR(100) NOT NULL,
             card_class VARCHAR(50) NOT NULL,
+            rarity VARCHAR(50) NOT NULL,
+            trait VARCHAR(100) NOT NULL,
+            type VARCHAR(50) NOT NULL,
+            details TEXT NOT NULL,
             extension_id VARCHAR(50),
             FOREIGN KEY (extension_id) REFERENCES extension (id)
         );
@@ -63,6 +67,10 @@ fn get_extension_cards(connection: &Connection, extension: &GameExtension) -> Ve
             extension,
             card_class: row.get_unwrap("card_class"),
             name: row.get_unwrap("name"),
+            card_trait: row.get_unwrap("trait"),
+            rarity: row.get_unwrap("rarity"),
+            card_type: row.get_unwrap("type"),
+            details: row.get_unwrap("details"),
         };
         let collection_card = CollectionCard {
             card,
