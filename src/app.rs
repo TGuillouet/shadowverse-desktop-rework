@@ -1,19 +1,21 @@
 use data::{collection::ExtensionProgression, config::Config, db::get_extensions};
 use iced::{
-    widget::{container, row},
-    Application, Command, Length,
+    widget::{container, row, Row},
+    Application, Command, Length, Subscription,
 };
 
 use crate::{screens, widgets::sidebar::sidebar};
 
 #[derive(Debug, Clone)]
 pub enum ApplicationMessage {
+    CardsListUpdater(screens::update::Message),
     ExtensionsList(screens::extensions_list::Message),
     CardsList(screens::cards_list::Message),
     OnSidebarClick(String),
 }
 
 pub enum AppScreens {
+    CardsListUpdater(screens::update::CardsUpdater),
     Extensions(screens::extensions_list::ExtensionsList),
     CardsList(screens::cards_list::CardsList),
 }
@@ -44,12 +46,9 @@ impl Application for IcedApplication {
     type Flags = Config;
 
     fn new(flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
-        let progression = get_extensions(&flags);
         let application = Self {
             config: flags,
-            screen: AppScreens::Extensions(screens::extensions_list::ExtensionsList::new(
-                progression,
-            )),
+            screen: AppScreens::CardsListUpdater(screens::update::CardsUpdater::new()),
         };
         (application, Command::none())
     }
@@ -60,6 +59,16 @@ impl Application for IcedApplication {
 
     fn update(&mut self, message: Self::Message) -> iced::Command<Self::Message> {
         match message {
+            ApplicationMessage::CardsListUpdater(message) => {
+                let AppScreens::CardsListUpdater(screen) = &mut self.screen else {
+                    return Command::none();
+                };
+                let message = screen
+                    .update(&self.config, message)
+                    .map(ApplicationMessage::CardsListUpdater);
+
+                Command::none()
+            }
             ApplicationMessage::ExtensionsList(message) => {
                 match message {
                     screens::extensions_list::Message::ToDetails(extension_progression) => {
@@ -90,18 +99,34 @@ impl Application for IcedApplication {
 
     fn view(&self) -> iced::Element<'_, Self::Message, Self::Theme, iced::Renderer> {
         let screen = match &self.screen {
+            AppScreens::CardsListUpdater(screen) => {
+                screen.view().map(ApplicationMessage::CardsListUpdater)
+            }
             AppScreens::Extensions(screen) => screen.view().map(ApplicationMessage::ExtensionsList),
             AppScreens::CardsList(screen) => screen.view().map(ApplicationMessage::CardsList),
         };
 
-        let sidebar = sidebar();
+        let sidebar_option = match &self.screen {
+            AppScreens::CardsListUpdater(_) => None,
+            _ => Some(sidebar()),
+        };
 
-        container(row![
-            sidebar,
-            container(screen).align_x(iced::alignment::Horizontal::Center)
-        ])
-        .width(Length::Fill)
-        .height(Length::Fill)
-        .into()
+        let app_row = Row::new()
+            .push_maybe(sidebar_option)
+            .push(container(screen).align_x(iced::alignment::Horizontal::Center));
+
+        container(app_row)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .into()
+    }
+
+    fn subscription(&self) -> iced::Subscription<Self::Message> {
+        match &self.screen {
+            AppScreens::CardsListUpdater(screen) => screen
+                .subscription(&self.config)
+                .map(ApplicationMessage::CardsListUpdater),
+            _ => Subscription::none(),
+        }
     }
 }
