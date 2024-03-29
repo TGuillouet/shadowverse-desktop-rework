@@ -12,8 +12,6 @@ fn main() -> Result<(), iced::Error> {
 
     setup_db(&config);
 
-    let cards_list = cards_updater::get_cards(); // TODO: Fetch all the cards only on the first app init
-
     let default_settings = Settings::<()>::default();
     let settings = Settings {
         id: default_settings.id,
