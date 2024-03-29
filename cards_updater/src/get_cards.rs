@@ -11,14 +11,19 @@ const CARDS_PER_PAGE: u32 = 15;
 const PAGE_API_URL: &str = "https://en.shadowverse-evolve.com/cards/searchresults_ex?card_name=&class%5B0%5D=all&title=&expansion_name=&cost%5B0%5D=all&card_kind%5B0%5D=all&rare%5B0%5D=all&power_from=&power_to=&hp_from=&hp_to=&type=&ability=&keyword=&view=text&t=1711058152734&_=1711057240616";
 const DETAIL_PAGE_URL: &str = "https://en.shadowverse-evolve.com/cards/?cardno=";
 
-pub fn get_cards() -> Vec<String> {
-    let number_of_cards = get_number_of_cards().unwrap();
-    let cards_list = get_cards_list(number_of_cards); // Get all the card numbers
+pub async fn get_cards(page: u32) -> Vec<String> {
+    // let number_of_cards = get_number_of_cards().unwrap();
+    let cards_list = get_cards_list(page); // Get all the card numbers
     cards_list
 }
 
+pub async fn get_max_page() -> u32 {
+    let number_of_cards = get_number_of_cards().await.unwrap();
+    number_of_cards.div_ceil(CARDS_PER_PAGE)
+}
+
 // TODO: Return the database model without saving it
-pub fn download_card(card_number: &str, covers_directory: &PathBuf) -> Card {
+pub async fn download_card(card_number: &str, covers_directory: &PathBuf) -> Card {
     // Extract the data from the card detail page
     let response = ureq::get(&format!("{}{}", DETAIL_PAGE_URL, card_number))
         .call()
@@ -78,30 +83,33 @@ fn get_extension_id(card_number: &str) -> &str {
     card_number.split("-").next().unwrap()
 }
 
-fn get_cards_list(number_of_cards: u32) -> Vec<String> {
-    let number_of_pages = number_of_cards.div_ceil(CARDS_PER_PAGE);
+// fn get_cards_list(number_of_cards: u32) -> Vec<String> {
+fn get_cards_list(page_index: u32) -> Vec<String> {
+    // let number_of_pages = number_of_cards.div_ceil(CARDS_PER_PAGE);
+    // let start_card_index = page_index * CARDS_PER_PAGE;
+    // let end_card_index = std::cmp::max((page_index + 1) * CARDS_PER_PAGE, number_of_cards);
     let mut cards_number = Vec::new();
 
-    for page_number in 1..=number_of_pages {
-        let response = ureq::get(&format!("{}&page={}", PAGE_API_URL, page_number))
-            .call()
-            .unwrap()
-            .into_string()
+    // for page_number in start_card_index..=end_card_index {
+    let response = ureq::get(&format!("{}&page={}", PAGE_API_URL, page_index))
+        .call()
+        .unwrap()
+        .into_string()
+        .unwrap();
+    let html = scraper::Html::parse_document(&response);
+    let cards_selector = scraper::Selector::parse("li").unwrap();
+    let html_cards = html.select(&cards_selector);
+    for html_card in html_cards {
+        let card_number = html_card
+            .select(&scraper::Selector::parse(".number").unwrap())
+            .next()
+            .map(|p| p.text().collect::<String>())
             .unwrap();
-        let html = scraper::Html::parse_document(&response);
-        let cards_selector = scraper::Selector::parse("li").unwrap();
-        let html_cards = html.select(&cards_selector);
-        for html_card in html_cards {
-            let card_number = html_card
-                .select(&scraper::Selector::parse(".number").unwrap())
-                .next()
-                .map(|p| p.text().collect::<String>())
-                .unwrap();
 
-            cards_number.push(card_number);
-        }
-        println!("Page {}", page_number);
+        cards_number.push(card_number);
     }
+    println!("Page {}", page_index);
+    // }
 
     cards_number
 }
