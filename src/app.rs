@@ -63,11 +63,9 @@ impl Application for IcedApplication {
                 let AppScreens::CardsListUpdater(screen) = &mut self.screen else {
                     return Command::none();
                 };
-                let message = screen
+                screen
                     .update(&self.config, message)
-                    .map(ApplicationMessage::CardsListUpdater);
-
-                Command::none()
+                    .map(ApplicationMessage::CardsListUpdater)
             }
             ApplicationMessage::ExtensionsList(message) => {
                 match message {

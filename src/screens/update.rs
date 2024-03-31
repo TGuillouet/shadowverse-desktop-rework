@@ -1,8 +1,12 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, time::Duration};
 
 use cards_updater::{get_cards, get_max_page, get_number_of_cards};
-use data::{cards::Card, config::Config};
+use data::{
+    cards::{self, Card},
+    config::Config,
+};
 use iced::{
+    futures::SinkExt,
     subscription,
     widget::{column, container, progress_bar, text},
     Command, Length, Subscription,
@@ -14,12 +18,13 @@ use crate::widget::Element;
 pub enum Message {
     MetadatasLoaded((u32, u32)),
     CardsListLoaded(Vec<String>),
-    CardFetched(Card),
+    // CardFetched(Card),
+    CardFetched(Event),
 }
 
 #[derive(Debug, Clone)]
 pub struct CardsUpdater {
-    current_card_index: u32,
+    current_card_index: usize,
     current_card_name: String,
 
     total_cards: u32,
@@ -50,8 +55,7 @@ impl CardsUpdater {
     pub fn update(&mut self, config: &Config, message: Message) -> Command<Message> {
         match message {
             Message::MetadatasLoaded((number_of_cards, number_of_pages)) => {
-                // self.total_cards = number_of_cards;
-                self.total_cards = 2;
+                self.total_cards = number_of_cards;
                 self.number_of_pages = number_of_pages;
 
                 self.step = DownloadStep::CardsList { number_of_pages };
@@ -59,17 +63,17 @@ impl CardsUpdater {
             Message::CardsListLoaded(cards_list) => {
                 // Add the tasks for each card
                 self.cards_list = cards_list.clone();
-                self.step = DownloadStep::Card(cards_list[0].clone());
-            }
-            Message::CardFetched(card) => {
-                // Insert the card in the database
-                println!("{:?}", card);
-                self.current_card_index += 1;
 
-                if self.current_card_index == self.total_cards - 1 {
-                    self.step = DownloadStep::Finished;
-                }
+                self.step = DownloadStep::Card(cards_list.clone());
             }
+            Message::CardFetched(event) => match event {
+                Event::Card(card) => {
+                    println!("Card name: {:?}", card.name);
+
+                    self.current_card_index += 1;
+                    self.current_card_name = card.name;
+                }
+            },
         }
 
         Command::none()
@@ -109,8 +113,9 @@ impl CardsUpdater {
             DownloadStep::CardsList { number_of_pages } => {
                 fetch_cards_list(number_of_pages).map(Message::CardsListLoaded)
             }
-            DownloadStep::Card(card) => {
-                fetch_single_card(card, &config.covers_directory).map(Message::CardFetched)
+            DownloadStep::Card(cards_list) => {
+                fetch_single_card(cards_list.clone(), config.covers_directory.clone())
+                    .map(Message::CardFetched)
             }
             _ => Subscription::none(),
         }
@@ -121,7 +126,7 @@ impl CardsUpdater {
 enum DownloadStep {
     Metadatas,
     CardsList { number_of_pages: u32 },
-    Card(String),
+    Card(Vec<String>),
     Finished,
 }
 
@@ -134,11 +139,6 @@ enum State {
 enum MetadataState {
     FetchNumberOfCards,
     MetadatasFetched,
-}
-
-enum SingleCard {
-    Ready { card_number: String },
-    Finished,
 }
 
 fn fetch_metadata() -> iced::Subscription<(u32, u32)> {
@@ -157,12 +157,26 @@ fn fetch_cards_list(page_number: u32) -> iced::Subscription<Vec<String>> {
     )
 }
 
-fn fetch_single_card<'a>(card_number: String, covers_path: &PathBuf) -> iced::Subscription<Card> {
-    let card = card_number.clone();
-    subscription::unfold(
-        "card_task",
-        SingleCard::Ready { card_number: card },
-        |state| fetch_single_card_task(covers_path, state),
+#[derive(Debug, Clone)]
+pub enum Event {
+    Card(Card),
+}
+
+fn fetch_single_card(cards: Vec<String>, covers_path: PathBuf) -> iced::Subscription<Event> {
+    struct DownloadCardsTask;
+
+    subscription::channel(
+        std::any::TypeId::of::<DownloadCardsTask>(),
+        1,
+        move |mut output| async move {
+            let mut cards = cards.iter().clone();
+            loop {
+                while let Some(current_card) = cards.next() {
+                    let card = cards_updater::download_card(&current_card, &covers_path);
+                    output.send(Event::Card(card)).await;
+                }
+            }
+        },
     )
 }
 
@@ -188,20 +202,5 @@ async fn fetch_cards_list_task(max_page_number: u32, state: State) -> (Vec<Strin
             (all_cards, State::CardsListFetchFinished)
         }
         State::CardsListFetchFinished => iced::futures::future::pending().await,
-    }
-}
-
-async fn fetch_single_card_task(
-    // card_number: String,
-    cover_directory: &PathBuf,
-    state: SingleCard,
-) -> (Card, SingleCard) {
-    match state {
-        SingleCard::Ready { card_number } => {
-            // let card_number = card_number.clone();
-            let card = cards_updater::download_card(&card_number, cover_directory).await;
-            (card, SingleCard::Finished)
-        }
-        SingleCard::Finished => iced::futures::future::pending().await,
     }
 }

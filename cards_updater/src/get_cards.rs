@@ -22,8 +22,7 @@ pub async fn get_max_page() -> u32 {
     number_of_cards.div_ceil(CARDS_PER_PAGE)
 }
 
-// TODO: Return the database model without saving it
-pub async fn download_card(card_number: &str, covers_directory: &PathBuf) -> Card {
+pub fn download_card(card_number: &str, covers_directory: &PathBuf) -> Card {
     // Extract the data from the card detail page
     let response = ureq::get(&format!("{}{}", DETAIL_PAGE_URL, card_number))
         .call()
