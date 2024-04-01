@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{collections::HashSet, path::PathBuf};
 
 use cards_updater::{get_cards, get_max_page, get_number_of_cards};
 use data::{cards::Card, config::Config, db};
@@ -15,7 +15,6 @@ use crate::widget::Element;
 pub enum Message {
     MetadatasLoaded((u32, u32)),
     CardsListLoaded(Vec<String>),
-    // CardFetched(Card),
     CardFetched(Event),
 }
 
@@ -26,7 +25,6 @@ pub struct CardsUpdater {
 
     total_cards: u32,
     number_of_pages: u32,
-    cards_list: Vec<String>,
 
     step: DownloadStep,
 }
@@ -39,7 +37,6 @@ impl CardsUpdater {
 
             total_cards: 0,
             number_of_pages: 0,
-            cards_list: Vec::new(),
 
             step: DownloadStep::Metadatas,
         }
@@ -55,11 +52,17 @@ impl CardsUpdater {
                 self.total_cards = number_of_cards;
                 self.number_of_pages = number_of_pages;
 
-                self.step = DownloadStep::CardsList { number_of_pages: 1 };
+                self.step = DownloadStep::CardsList { number_of_pages };
             }
             Message::CardsListLoaded(cards_list) => {
-                self.cards_list = cards_list.clone();
-                self.step = DownloadStep::Card(cards_list.clone());
+                let cards_list = exclude_already_downloaded(cards_list.clone(), config);
+
+                if cards_list.len() == self.total_cards as usize {
+                    self.step = DownloadStep::Finished;
+                } else {
+                    self.current_card_index = cards_list.len();
+                    self.step = DownloadStep::Card(cards_list);
+                }
             }
             Message::CardFetched(event) => match event {
                 Event::Card(card) => {
@@ -214,4 +217,13 @@ async fn fetch_cards_list_task(max_page_number: u32, state: State) -> (Vec<Strin
         }
         State::CardsListFetchFinished => iced::futures::future::pending().await,
     }
+}
+
+fn exclude_already_downloaded(cards_list: Vec<String>, config: &Config) -> Vec<String> {
+    let already_downloaded: Vec<String> = db::get_all_cards_number(config);
+    let item_set: HashSet<String> = already_downloaded.into_iter().collect();
+    cards_list
+        .into_iter()
+        .filter(|item| !item_set.contains(item))
+        .collect()
 }

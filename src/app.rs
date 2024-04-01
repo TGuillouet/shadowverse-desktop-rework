@@ -1,4 +1,8 @@
-use data::{collection::ExtensionProgression, config::Config, db::get_extensions};
+use data::{
+    collection::ExtensionProgression,
+    config::Config,
+    db::{self, get_extensions},
+};
 use iced::{
     widget::{container, row, Row},
     Application, Command, Length, Subscription,
@@ -46,9 +50,13 @@ impl Application for IcedApplication {
     type Flags = Config;
 
     fn new(flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
+        // let progression_screen = AppScreens::Extensions(
+        //     screens::extensions_list::ExtensionsList::new(db::get_extensions(&flags)),
+        // );
         let application = Self {
             config: flags,
             screen: AppScreens::CardsListUpdater(screens::update::CardsUpdater::new()),
+            // screen: progression_screen,
         };
         (application, Command::none())
     }
@@ -60,6 +68,13 @@ impl Application for IcedApplication {
     fn update(&mut self, message: Self::Message) -> iced::Command<Self::Message> {
         match message {
             ApplicationMessage::CardsListUpdater(message) => {
+                let AppScreens::CardsListUpdater(screen) = &mut self.screen else {
+                    return Command::none();
+                };
+                let command = screen
+                    .update(&self.config, message.clone())
+                    .map(ApplicationMessage::CardsListUpdater);
+
                 match &message {
                     screens::update::Message::CardFetched(event) => match event {
                         screens::update::Event::Finished => {
@@ -71,12 +86,7 @@ impl Application for IcedApplication {
                     _ => {}
                 };
 
-                let AppScreens::CardsListUpdater(screen) = &mut self.screen else {
-                    return Command::none();
-                };
-                screen
-                    .update(&self.config, message)
-                    .map(ApplicationMessage::CardsListUpdater)
+                command
             }
             ApplicationMessage::ExtensionsList(message) => {
                 match message {
