@@ -1,6 +1,9 @@
 use std::fmt::Display;
 
-use rusqlite::types::{FromSql, ValueRef};
+use rusqlite::{
+    types::{FromSql, ToSqlOutput, ValueRef},
+    ToSql,
+};
 
 #[derive(Debug, Clone)]
 pub struct Card {
@@ -62,6 +65,13 @@ impl FromSql for CardClass {
         }
 
         Ok(CardClass::Neutral)
+    }
+}
+
+impl ToSql for CardClass {
+    fn to_sql(&self) -> rusqlite::Result<rusqlite::types::ToSqlOutput<'_>> {
+        println!("{}", self.to_string());
+        Ok(self.to_string().into())
     }
 }
 

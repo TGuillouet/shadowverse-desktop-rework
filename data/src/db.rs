@@ -1,5 +1,5 @@
 use crate::{
-    cards::{Card, GameExtension},
+    cards::{Card, CardClass, GameExtension},
     collection::{CollectionCard, ExtensionProgression},
     config::Config,
 };
@@ -166,6 +166,40 @@ pub fn add_card_to_collection(config: &Config, card: Card) -> Result<(), ()> {
         ON CONFLICT (card_id)
             DO UPDATE SET is_owned = excluded.is_owned",
         (&card.id, true),
+    );
+
+    println!("{:?}", result);
+
+    Ok(())
+}
+
+pub fn upsert_card(config: &Config, card: Card) -> Result<(), ()> {
+    let connection =
+        Connection::open(config.db_file.clone()).expect("Could open the database file");
+
+    // Create the extension if needed
+    let result = connection.execute(
+        "INSERT INTO 
+            extension (id, name)
+        VALUES (?, ?)",
+        (&card.extension.id, &card.extension.name),
+    );
+
+    let result = connection.execute(
+        "INSERT INTO 
+            card (id, name, card_class, rarity, trait, type, details, extension_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT DO UPDATE SET details = ?7",
+        (
+            &card.id,
+            &card.name,
+            &CardClass::from(card.card_class),
+            &card.rarity,
+            &card.card_trait,
+            &card.card_type,
+            &card.details,
+            &card.extension.id,
+        ),
     );
 
     println!("{:?}", result);

@@ -60,6 +60,17 @@ impl Application for IcedApplication {
     fn update(&mut self, message: Self::Message) -> iced::Command<Self::Message> {
         match message {
             ApplicationMessage::CardsListUpdater(message) => {
+                match &message {
+                    screens::update::Message::CardFetched(event) => match event {
+                        screens::update::Event::Finished => {
+                            self.navigate_to_extensions();
+                            return Command::none();
+                        }
+                        _ => {}
+                    },
+                    _ => {}
+                };
+
                 let AppScreens::CardsListUpdater(screen) = &mut self.screen else {
                     return Command::none();
                 };

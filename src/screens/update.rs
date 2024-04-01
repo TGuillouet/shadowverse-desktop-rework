@@ -1,10 +1,7 @@
-use std::{path::PathBuf, time::Duration};
+use std::path::PathBuf;
 
 use cards_updater::{get_cards, get_max_page, get_number_of_cards};
-use data::{
-    cards::{self, Card},
-    config::Config,
-};
+use data::{cards::Card, config::Config, db};
 use iced::{
     futures::SinkExt,
     subscription,
@@ -58,20 +55,21 @@ impl CardsUpdater {
                 self.total_cards = number_of_cards;
                 self.number_of_pages = number_of_pages;
 
-                self.step = DownloadStep::CardsList { number_of_pages };
+                self.step = DownloadStep::CardsList { number_of_pages: 1 };
             }
             Message::CardsListLoaded(cards_list) => {
-                // Add the tasks for each card
                 self.cards_list = cards_list.clone();
-
                 self.step = DownloadStep::Card(cards_list.clone());
             }
             Message::CardFetched(event) => match event {
                 Event::Card(card) => {
-                    println!("Card name: {:?}", card.name);
+                    let _ = db::upsert_card(&config, card.clone());
 
                     self.current_card_index += 1;
                     self.current_card_name = card.name;
+                }
+                Event::Finished => {
+                    self.step = DownloadStep::Finished;
                 }
             },
         }
@@ -80,10 +78,25 @@ impl CardsUpdater {
     }
 
     pub fn view<'a>(&self) -> Element<'a, Message> {
-        // TODO: Screen for when we fetch the cards numbers list (Step Fetch cards list)
+        let screen = match &self.step {
+            DownloadStep::Metadatas => text("Fetching the number of available cards").into(),
+            DownloadStep::CardsList { number_of_pages: _ } => {
+                text("Extracting the list of cards").into()
+            }
+            DownloadStep::Card(_) => self.card_sync_view(),
+            DownloadStep::Finished => text("Finished").into(),
+        };
 
-        // Downloading cards screen
-        let update_in_progress_column = column![
+        container(screen)
+            .align_x(iced::alignment::Horizontal::Center)
+            .align_y(iced::alignment::Vertical::Center)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .into()
+    }
+
+    pub fn card_sync_view<'a>(&self) -> Element<'a, Message> {
+        column![
             text(format!(
                 "Syncing the cards list: {} / {}",
                 self.current_card_index, self.total_cards
@@ -97,14 +110,8 @@ impl CardsUpdater {
                 .width(Length::Fixed(300.0))
                 .horizontal_alignment(iced::alignment::Horizontal::Center),
         ]
-        .spacing(10.0);
-
-        container(update_in_progress_column)
-            .align_x(iced::alignment::Horizontal::Center)
-            .align_y(iced::alignment::Vertical::Center)
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .into()
+        .spacing(10.0)
+        .into()
     }
 
     pub fn subscription(&self, config: &Config) -> iced::Subscription<Message> {
@@ -160,6 +167,7 @@ fn fetch_cards_list(page_number: u32) -> iced::Subscription<Vec<String>> {
 #[derive(Debug, Clone)]
 pub enum Event {
     Card(Card),
+    Finished,
 }
 
 fn fetch_single_card(cards: Vec<String>, covers_path: PathBuf) -> iced::Subscription<Event> {
@@ -167,14 +175,17 @@ fn fetch_single_card(cards: Vec<String>, covers_path: PathBuf) -> iced::Subscrip
 
     subscription::channel(
         std::any::TypeId::of::<DownloadCardsTask>(),
-        1,
+        0,
         move |mut output| async move {
             let mut cards = cards.iter().clone();
+
+            while let Some(current_card) = cards.next() {
+                let card = cards_updater::download_card(&current_card, &covers_path);
+                let _ = output.send(Event::Card(card)).await;
+            }
+
             loop {
-                while let Some(current_card) = cards.next() {
-                    let card = cards_updater::download_card(&current_card, &covers_path);
-                    output.send(Event::Card(card)).await;
-                }
+                let _ = output.send(Event::Finished).await;
             }
         },
     )
