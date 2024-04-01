@@ -202,7 +202,31 @@ pub fn upsert_card(config: &Config, card: Card) -> Result<(), ()> {
         ),
     );
 
-    println!("{:?}", result);
+    if let Ok(_) = result {
+        // Add the card_collection
+        let result = connection.execute(
+            "INSERT INTO
+                collected_cards (card_id, is_owned)
+            VALUES (?, ?)",
+            (&card.id, false),
+        );
+    }
 
     Ok(())
+}
+
+pub fn get_all_cards_number(config: &Config) -> Vec<String> {
+    let connection =
+        Connection::open(config.db_file.clone()).expect("Could open the database file");
+
+    let mut statement = connection.prepare("SELECT id FROM card").unwrap();
+    let cards_result = statement
+        .query_map([], |row| Ok(row.get_unwrap("id")))
+        .unwrap();
+
+    let mut cards = Vec::new();
+    for card in cards_result {
+        cards.push(card.unwrap());
+    }
+    cards
 }
