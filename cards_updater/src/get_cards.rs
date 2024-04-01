@@ -8,7 +8,7 @@ use crate::get_number_of_cards::get_number_of_cards;
 // TODO: Create an error kind with thiserror and delete all the .unwrap()
 
 const CARDS_PER_PAGE: u32 = 15;
-const PAGE_API_URL: &str = "https://en.shadowverse-evolve.com/cards/searchresults_ex?card_name=&class%5B0%5D=all&title=&expansion_name=&cost%5B0%5D=all&card_kind%5B0%5D=all&rare%5B0%5D=all&power_from=&power_to=&hp_from=&hp_to=&type=&ability=&keyword=&view=text&t=1711058152734&_=1711057240616";
+const PAGE_API_URL: &str = "https://en.shadowverse-evolve.com/cards/searchresults_ex?card_name=&class%5B0%5D=all&title=&expansion_name=&cost%5B0%5D=all&card_kind%5B0%5D=all&rare%5B0%5D=all&power_from=&power_to=&hp_from=&hp_to=&type=&ability=&keyword=&view=text&t=1711058152734&_=1711057240616&sort=no";
 const DETAIL_PAGE_URL: &str = "https://en.shadowverse-evolve.com/cards/?cardno=";
 
 pub async fn get_cards(page: u32) -> Vec<String> {
@@ -24,11 +24,13 @@ pub async fn get_max_page() -> u32 {
 
 pub fn download_card(card_number: &str, covers_directory: &PathBuf) -> Card {
     // Extract the data from the card detail page
+    // println!("Extracting: {}", card_number);
     let response = ureq::get(&format!("{}{}", DETAIL_PAGE_URL, card_number))
         .call()
         .unwrap()
         .into_string()
         .unwrap();
+    // println!("{}", response);
     let html_card = scraper::Html::parse_document(&response);
 
     let name = html_card
@@ -37,11 +39,18 @@ pub fn download_card(card_number: &str, covers_directory: &PathBuf) -> Card {
         .map(|p| p.text().collect::<String>())
         .unwrap();
 
+    let first_illustrator_selector = scraper::Selector::parse(".illustrator").unwrap();
     let card_number = html_card
-        .select(&scraper::Selector::parse(".illustrator .name").unwrap())
+        .select(&first_illustrator_selector)
         .next()
-        .map(|p| p.text().collect::<String>())
+        .map(|span| {
+            span.select(&scraper::Selector::parse("span").unwrap())
+                .map(|span| span.text().collect::<String>())
+                .last()
+                .unwrap()
+        })
         .unwrap();
+    println!("{}", card_number);
 
     let infos_selector = scraper::Selector::parse(".info dl dd").unwrap();
     let mut infos = html_card.select(&infos_selector);
@@ -56,7 +65,7 @@ pub fn download_card(card_number: &str, covers_directory: &PathBuf) -> Card {
         .select(&scraper::Selector::parse(".detail p").unwrap())
         .next()
         .map(|p| p.html()) // TODO: find a way to get the images too
-        .unwrap()
+        .unwrap_or_default()
         .to_string();
 
     get_image(&card_number, covers_directory);
@@ -64,7 +73,7 @@ pub fn download_card(card_number: &str, covers_directory: &PathBuf) -> Card {
     let extension_id = get_extension_id(&card_number);
 
     Card {
-        id: card_number.clone(),
+        id: card_number.to_string().clone(),
         name,
         card_class: CardClass::from(card_class),
         card_type,
@@ -114,9 +123,14 @@ fn get_cards_list(page_index: u32) -> Vec<String> {
 }
 
 fn get_image(card_number: &str, output_directory: &PathBuf) {
+    let mut extension_id = get_extension_id(card_number);
+    if extension_id.contains("BSF") {
+        extension_id = "PR";
+    }
+
     let image_url = format!(
-        "https://en.shadowverse-evolve.com/wordpress/wp-content/images/cardlist/BP03/{}.png",
-        card_number
+        "https://en.shadowverse-evolve.com/wordpress/wp-content/images/cardlist/{}/{}.png",
+        extension_id, card_number
     );
 
     let mut response = ureq::get(&image_url).call().unwrap().into_reader();
