@@ -1,4 +1,4 @@
-use std::{fmt::format, fs::File, io::BufWriter, path::PathBuf};
+use std::{fs::File, io::BufWriter, path::PathBuf};
 
 use data::cards::{Card, CardClass, GameExtension};
 use scraper::selectable::Selectable;
@@ -12,7 +12,6 @@ const PAGE_API_URL: &str = "https://en.shadowverse-evolve.com/cards/searchresult
 const DETAIL_PAGE_URL: &str = "https://en.shadowverse-evolve.com/cards/?cardno=";
 
 pub async fn get_cards(page: u32) -> Vec<String> {
-    // let number_of_cards = get_number_of_cards().unwrap();
     let cards_list = get_cards_list(page); // Get all the card numbers
     cards_list
 }
@@ -24,13 +23,11 @@ pub async fn get_max_page() -> u32 {
 
 pub fn download_card(card_number: &str, covers_directory: &PathBuf) -> Card {
     // Extract the data from the card detail page
-    // println!("Extracting: {}", card_number);
     let response = ureq::get(&format!("{}{}", DETAIL_PAGE_URL, card_number))
         .call()
         .unwrap()
         .into_string()
         .unwrap();
-    // println!("{}", response);
     let html_card = scraper::Html::parse_document(&response);
 
     let name = html_card
@@ -50,7 +47,6 @@ pub fn download_card(card_number: &str, covers_directory: &PathBuf) -> Card {
                 .unwrap()
         })
         .unwrap();
-    println!("{}", card_number);
 
     let infos_selector = scraper::Selector::parse(".info dl dd").unwrap();
     let mut infos = html_card.select(&infos_selector);
@@ -91,14 +87,9 @@ fn get_extension_id(card_number: &str) -> &str {
     card_number.split("-").next().unwrap()
 }
 
-// fn get_cards_list(number_of_cards: u32) -> Vec<String> {
 fn get_cards_list(page_index: u32) -> Vec<String> {
-    // let number_of_pages = number_of_cards.div_ceil(CARDS_PER_PAGE);
-    // let start_card_index = page_index * CARDS_PER_PAGE;
-    // let end_card_index = std::cmp::max((page_index + 1) * CARDS_PER_PAGE, number_of_cards);
     let mut cards_number = Vec::new();
 
-    // for page_number in start_card_index..=end_card_index {
     let response = ureq::get(&format!("{}&page={}", PAGE_API_URL, page_index))
         .call()
         .unwrap()
@@ -117,7 +108,6 @@ fn get_cards_list(page_index: u32) -> Vec<String> {
         cards_number.push(card_number);
     }
     println!("Page {}", page_index);
-    // }
 
     cards_number
 }
