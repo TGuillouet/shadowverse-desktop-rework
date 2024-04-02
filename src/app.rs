@@ -83,6 +83,13 @@ impl Application for IcedApplication {
                         }
                         _ => {}
                     },
+                    screens::update::Message::MetadatasLoaded((total_cards, _)) => {
+                        let already_present_in_db = db::get_all_cards_number(&self.config);
+                        if already_present_in_db.len() == total_cards.clone() as usize {
+                            self.navigate_to_extensions();
+                        }
+                        return Command::none();
+                    }
                     _ => {}
                 };
 
@@ -91,7 +98,6 @@ impl Application for IcedApplication {
             ApplicationMessage::ExtensionsList(message) => {
                 match message {
                     screens::extensions_list::Message::ToDetails(extension_progression) => {
-                        println!("To details for {:?}", extension_progression);
                         self.navigate_to_progress(&extension_progression);
                     }
                 }
