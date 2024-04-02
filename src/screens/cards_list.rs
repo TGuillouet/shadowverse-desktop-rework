@@ -107,6 +107,7 @@ impl CardsList {
         ]
         .spacing(15.0)
         .padding(15.0)
+        .height(Length::Fixed(70.0))
         .into();
         let cards_list = cards_list(&self.columns, &self.filtered_cards_list);
 
@@ -146,6 +147,7 @@ fn cards_list<'a>(
             .spacing(10.0)
             .padding(15.0),
     )
+    .height(Length::Fill)
     .into()
 }
 
