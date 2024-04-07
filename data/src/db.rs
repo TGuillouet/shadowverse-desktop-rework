@@ -40,6 +40,8 @@ pub fn setup_db(config: &Config) -> Result<(), ()> {
         return Err(());
     }
 
+    let _ = connection.close();
+
     Ok(())
 }
 

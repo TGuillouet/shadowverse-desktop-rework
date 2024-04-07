@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use rusqlite::{
-    types::{FromSql, ToSqlOutput, ValueRef},
+    types::{FromSql, ValueRef},
     ToSql,
 };
 

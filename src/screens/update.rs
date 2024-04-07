@@ -60,7 +60,7 @@ impl CardsUpdater {
                 if cards_list.len() == self.total_cards as usize {
                     self.step = DownloadStep::Finished;
                 } else {
-                    self.current_card_index = cards_list.len();
+                    self.current_card_index = self.total_cards as usize - cards_list.len();
                     self.step = DownloadStep::Card(cards_list);
                 }
             }

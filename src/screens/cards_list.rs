@@ -37,10 +37,11 @@ impl CardsList {
         Self {
             columns: vec![
                 Column::new("Owned").width(Length::FillPortion(1)),
-                Column::new("Number").width(Length::FillPortion(1)),
-                Column::new("Name").width(Length::FillPortion(2)),
-                Column::new("Class").width(Length::FillPortion(1)),
-                Column::new("Actions"),
+                Column::new("Rarity").width(Length::FillPortion(2)),
+                Column::new("Number").width(Length::FillPortion(2)),
+                Column::new("Name").width(Length::FillPortion(4)),
+                Column::new("Class").width(Length::FillPortion(2)),
+                Column::new("Actions").width(Length::Fixed(100.0)),
             ],
             filtered_cards_list: extension_progression.clone().extension_cards,
             extension_progression,
@@ -170,20 +171,26 @@ fn table_row<'a>(card: &Card, is_owned: bool) -> TableRow<'a, Message, Theme, ic
             .height(Length::Fill),
     );
 
+    let card_rariry = text(card.rarity.clone())
+        .width(Length::FillPortion(2))
+        .height(Length::Fill)
+        .vertical_alignment(iced::alignment::Vertical::Center);
+    elements_row = elements_row.push(card_rariry);
+
     let card_number = text(card.id.clone())
-        .width(Length::FillPortion(1))
+        .width(Length::FillPortion(2))
         .height(Length::Fill)
         .vertical_alignment(iced::alignment::Vertical::Center);
     elements_row = elements_row.push(card_number);
 
     let card_name = text(card.name.clone())
-        .width(Length::FillPortion(2))
+        .width(Length::FillPortion(4))
         .height(Length::Fill)
         .vertical_alignment(iced::alignment::Vertical::Center);
     elements_row = elements_row.push(card_name);
 
     let class = text(format!("{:?}", card.card_class))
-        .width(Length::FillPortion(1))
+        .width(Length::FillPortion(2))
         .height(Length::Fill)
         .vertical_alignment(iced::alignment::Vertical::Center);
     elements_row = elements_row.push(class);
@@ -194,7 +201,7 @@ fn table_row<'a>(card: &Card, is_owned: bool) -> TableRow<'a, Message, Theme, ic
         button(text("Remove")).on_press(Message::RemoveCard(card.clone()))
     };
     action_button = action_button.padding([0.0, 10.0]);
-    let actions_row = row![action_button].width(Length::Fixed(150.0));
+    let actions_row = row![action_button].width(Length::Fixed(100.0));
     elements_row = elements_row.push(actions_row);
 
     TableRow::new(elements_row.align_items(iced::Alignment::Center)).row_height(35.0)

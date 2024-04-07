@@ -1,7 +1,7 @@
 use std::{fs::File, io::BufWriter, path::PathBuf};
 
 use data::cards::{Card, CardClass, GameExtension};
-use scraper::selectable::Selectable;
+use scraper::{element_ref::Select, selectable::Selectable};
 
 use crate::get_number_of_cards::get_number_of_cards;
 
@@ -48,14 +48,14 @@ pub fn download_card(card_number: &str, covers_directory: &PathBuf) -> Card {
         })
         .unwrap();
 
-    let infos_selector = scraper::Selector::parse(".info dl dd").unwrap();
-    let mut infos = html_card.select(&infos_selector);
+    let infos_selector = scraper::Selector::parse(".info dl").unwrap();
+    let infos = html_card.select(&infos_selector);
 
-    let card_class = infos.next().map(|p| p.text().collect::<String>()).unwrap();
-    let card_type = infos.next().map(|p| p.text().collect::<String>()).unwrap();
-    let card_trait = infos.next().map(|p| p.text().collect::<String>()).unwrap();
-    let card_rarity = infos.next().map(|p| p.text().collect::<String>()).unwrap();
-    let card_extension = infos.next().map(|p| p.text().collect::<String>()).unwrap();
+    let card_class = get_from_block_with_text("Class", &infos);
+    let card_type = get_from_block_with_text("Card Type", &infos);
+    let card_trait = get_from_block_with_text("Trait", &infos);
+    let card_rarity = get_from_block_with_text("Rarity", &infos);
+    let card_extension = get_from_block_with_text("Card Set", &infos);
 
     let details = html_card
         .select(&scraper::Selector::parse(".detail p").unwrap())
@@ -81,6 +81,29 @@ pub fn download_card(card_number: &str, covers_directory: &PathBuf) -> Card {
             name: card_extension,
         },
     }
+}
+
+fn get_from_block_with_text(text_to_search: &str, infos: &scraper::html::Select) -> String {
+    let label_selector = scraper::Selector::parse("dt").unwrap();
+    let content_selector = scraper::Selector::parse("dd").unwrap();
+    for line in infos.clone().into_iter() {
+        let label = line
+            .select(&label_selector)
+            .next()
+            .map(|dt| dt.text().collect::<String>())
+            .unwrap();
+        let content = line
+            .select(&content_selector)
+            .next()
+            .map(|dd| dd.text().collect::<String>())
+            .unwrap();
+
+        if label == text_to_search {
+            return content;
+        }
+    }
+
+    "Unknown".to_string()
 }
 
 fn get_extension_id(card_number: &str) -> &str {
