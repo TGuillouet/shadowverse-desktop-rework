@@ -155,15 +155,36 @@ fn fetch_metadata() -> iced::Subscription<(u32, u32)> {
     subscription::unfold(
         "list_metadata_task",
         MetadataState::FetchNumberOfCards,
-        |state| fetch_metadatas_task(state),
+        |state| async move {
+            match state {
+                MetadataState::FetchNumberOfCards => {
+                    let number_of_cards = get_number_of_cards().await.unwrap();
+                    let max_page = get_max_page().await;
+                    ((number_of_cards, max_page), MetadataState::MetadatasFetched)
+                }
+                MetadataState::MetadatasFetched => iced::futures::future::pending().await,
+            }
+        },
     )
 }
 
-fn fetch_cards_list(page_number: u32) -> iced::Subscription<Vec<String>> {
+fn fetch_cards_list(total_pages_number: u32) -> iced::Subscription<Vec<String>> {
     subscription::unfold(
         "cards_list_task",
         State::CardsListFetchReady,
-        move |state| fetch_cards_list_task(page_number, state),
+        move |state| async move {
+            match state {
+                State::CardsListFetchReady => {
+                    let mut all_cards = Vec::new();
+                    for page_number in 1..=total_pages_number {
+                        let cards_list = get_cards(page_number).await;
+                        all_cards.extend(cards_list.into_iter());
+                    }
+                    (all_cards, State::CardsListFetchFinished)
+                }
+                State::CardsListFetchFinished => iced::futures::future::pending().await,
+            }
+        },
     )
 }
 
@@ -192,31 +213,6 @@ fn fetch_single_card(cards: Vec<String>, covers_path: PathBuf) -> iced::Subscrip
             }
         },
     )
-}
-
-async fn fetch_metadatas_task(state: MetadataState) -> ((u32, u32), MetadataState) {
-    match state {
-        MetadataState::FetchNumberOfCards => {
-            let number_of_cards = get_number_of_cards().await.unwrap();
-            let max_page = get_max_page().await;
-            ((number_of_cards, max_page), MetadataState::MetadatasFetched)
-        }
-        MetadataState::MetadatasFetched => iced::futures::future::pending().await,
-    }
-}
-
-async fn fetch_cards_list_task(max_page_number: u32, state: State) -> (Vec<String>, State) {
-    match state {
-        State::CardsListFetchReady => {
-            let mut all_cards = Vec::new();
-            for page_number in 1..=max_page_number {
-                let cards_list = get_cards(page_number).await;
-                all_cards.extend(cards_list.into_iter());
-            }
-            (all_cards, State::CardsListFetchFinished)
-        }
-        State::CardsListFetchFinished => iced::futures::future::pending().await,
-    }
 }
 
 fn exclude_already_downloaded(cards_list: Vec<String>, config: &Config) -> Vec<String> {
