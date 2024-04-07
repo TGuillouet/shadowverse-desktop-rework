@@ -180,7 +180,7 @@ pub fn upsert_card(config: &Config, card: Card) -> Result<(), ()> {
         Connection::open(config.db_file.clone()).expect("Could open the database file");
 
     // Create the extension if needed
-    let result = connection.execute(
+    let _ = connection.execute(
         "INSERT INTO 
             extension (id, name)
         VALUES (?, ?)",
@@ -206,7 +206,7 @@ pub fn upsert_card(config: &Config, card: Card) -> Result<(), ()> {
 
     if let Ok(_) = result {
         // Add the card_collection
-        let result = connection.execute(
+        let _ = connection.execute(
             "INSERT INTO
                 collected_cards (card_id, is_owned)
             VALUES (?, ?)",

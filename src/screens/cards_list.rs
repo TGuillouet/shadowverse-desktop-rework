@@ -57,7 +57,7 @@ impl CardsList {
                 println!("Add the card: {:?}", card);
 
                 // Save the cards in the extension
-                data::db::add_card_to_collection(config, card);
+                let _ = data::db::add_card_to_collection(config, card);
 
                 // Update the list
                 self.extension_progression =
@@ -69,7 +69,7 @@ impl CardsList {
                 println!("Remove the card: {:?}", card);
 
                 // Save the cards in the extension
-                data::db::remove_card_from_collection(config, card);
+                let _ = data::db::remove_card_from_collection(config, card);
 
                 // Update the list
                 self.extension_progression =

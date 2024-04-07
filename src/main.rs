@@ -10,7 +10,7 @@ mod widgets;
 fn main() -> Result<(), iced::Error> {
     let config = Config::load().unwrap();
 
-    setup_db(&config);
+    let _ = setup_db(&config);
 
     let default_settings = Settings::<()>::default();
     let settings = Settings {

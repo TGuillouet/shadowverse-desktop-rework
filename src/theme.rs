@@ -60,7 +60,6 @@ pub enum Container {
     #[default]
     Default,
     Sidebar,
-    Bg,
 }
 
 impl container::StyleSheet for Theme {
@@ -77,10 +76,6 @@ impl container::StyleSheet for Theme {
                     width: 0.0,
                     color: Color::TRANSPARENT,
                 },
-                ..Default::default()
-            },
-            Container::Bg => container::Appearance {
-                background: Some(self.palette.accent.into()),
                 ..Default::default()
             },
         }
@@ -280,7 +275,7 @@ impl scrollable::StyleSheet for Theme {
 
     fn hovered(
         &self,
-        style: &Self::Style,
+        _style: &Self::Style,
         is_mouse_over_scrollbar: bool,
     ) -> scrollable::Appearance {
         scrollable::Appearance {
@@ -314,7 +309,7 @@ impl scrollable::StyleSheet for Theme {
 impl overlay::menu::StyleSheet for Theme {
     type Style = ();
 
-    fn appearance(&self, style: &Self::Style) -> overlay::menu::Appearance {
+    fn appearance(&self, _style: &Self::Style) -> overlay::menu::Appearance {
         overlay::menu::Appearance {
             text_color: self.palette.primary_text,
             background: iced::Background::Color(self.palette.background),
@@ -348,13 +343,13 @@ impl table_row::style::Stylesheet for Theme {
 impl svg::StyleSheet for Theme {
     type Style = ();
 
-    fn appearance(&self, style: &Self::Style) -> svg::Appearance {
+    fn appearance(&self, _style: &Self::Style) -> svg::Appearance {
         svg::Appearance {
             color: Some(Color::WHITE),
         }
     }
 
-    fn hovered(&self, style: &Self::Style) -> svg::Appearance {
+    fn hovered(&self, _style: &Self::Style) -> svg::Appearance {
         svg::Appearance {
             color: Some(Color::WHITE),
         }

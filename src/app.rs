@@ -4,7 +4,7 @@ use data::{
     db::{self, get_extensions},
 };
 use iced::{
-    widget::{container, row, Row},
+    widget::{container, Row},
     Application, Command, Length, Subscription,
 };
 

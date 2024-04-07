@@ -1,7 +1,4 @@
-use iced_core::{
-    layout, renderer, widget::Tree, Border, Color, Element, Length, Padding, Point, Renderer,
-    Shadow, Size, Widget,
-};
+use iced_core::{layout, renderer, Color, Element, Length, Padding, Point, Shadow, Size, Widget};
 
 use self::style::Stylesheet;
 

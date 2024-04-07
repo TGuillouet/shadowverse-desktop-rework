@@ -26,7 +26,7 @@ impl Config {
             return Err(ConfigError::Parse(error.to_string()));
         }
 
-        let configuration = configuration.unwrap();
+        let _configuration = configuration.unwrap();
 
         // Create the config object
         Ok(Self {
@@ -74,7 +74,7 @@ impl Config {
         if !covers_dir.exists() {
             match std::fs::create_dir_all(covers_dir.clone()) {
                 Ok(_) => {}
-                Err(error) => {
+                Err(_error) => {
                     return Err(ConfigError::Create(covers_dir.to_str().unwrap().to_owned()))
                 }
             }
