@@ -5,7 +5,7 @@ use data::{
     db::get_extension,
 };
 use iced::{
-    widget::{button, column, combo_box, container, row, scrollable, text, text_input, Row},
+    widget::{button, column, combo_box, container, row, scrollable, text, text_input, Row, Svg},
     Command, Length,
 };
 use widgets::header::Column;
@@ -163,10 +163,15 @@ fn headers<'a>(columns: &Vec<Column>) -> Element<'a, Message> {
 fn table_row<'a>(card: &Card, is_owned: bool) -> TableRow<'a, Message, Theme, iced::Renderer> {
     let mut elements_row = Row::new().padding([0.0, 10.0]);
 
-    let owned_graphic = if is_owned { text("O") } else { text("X") };
+    // let owned_graphic = if is_owned { text("O") } else { text("X") };
+    let owned_graphic = if is_owned {
+        Svg::new("resources/done.svg")
+    } else {
+        Svg::new("resources/close.svg")
+    };
     elements_row = elements_row.push(
         owned_graphic
-            .vertical_alignment(iced::alignment::Vertical::Center)
+            // .vertical_alignment(iced::alignment::Vertical::Center)
             .width(Length::FillPortion(1))
             .height(Length::Fill),
     );

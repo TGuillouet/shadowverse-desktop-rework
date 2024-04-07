@@ -1,9 +1,10 @@
 use iced::{
-    application, color, overlay,
+    application::{self},
+    color, overlay,
     widget::{
         button, container, progress_bar,
         scrollable::{self, Scroller},
-        text, text_input,
+        svg, text, text_input,
     },
     Border, Color, Vector,
 };
@@ -339,6 +340,23 @@ impl table_row::style::Stylesheet for Theme {
                 width: 0.0,
                 radius: 5.0.into(),
             },
+        }
+    }
+}
+
+// SVG
+impl svg::StyleSheet for Theme {
+    type Style = ();
+
+    fn appearance(&self, style: &Self::Style) -> svg::Appearance {
+        svg::Appearance {
+            color: Some(Color::WHITE),
+        }
+    }
+
+    fn hovered(&self, style: &Self::Style) -> svg::Appearance {
+        svg::Appearance {
+            color: Some(Color::WHITE),
         }
     }
 }
