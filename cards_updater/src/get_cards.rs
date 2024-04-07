@@ -178,5 +178,5 @@ fn get_image(card_number: &str, output_directory: &PathBuf) {
 
     let mut out_file = File::create(output_directory.join(format!("{}.png", card_number))).unwrap();
 
-    std::io::copy(&mut response, &mut BufWriter::new(&mut out_file));
+    let _ = std::io::copy(&mut response, &mut BufWriter::new(&mut out_file));
 }

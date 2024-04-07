@@ -50,13 +50,9 @@ impl Application for IcedApplication {
     type Flags = Config;
 
     fn new(flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
-        // let progression_screen = AppScreens::Extensions(
-        //     screens::extensions_list::ExtensionsList::new(db::get_extensions(&flags)),
-        // );
         let application = Self {
             config: flags,
             screen: AppScreens::CardsListUpdater(screens::update::CardsUpdater::new()),
-            // screen: progression_screen,
         };
         (application, Command::none())
     }
@@ -83,7 +79,11 @@ impl Application for IcedApplication {
                         }
                         _ => {}
                     },
-                    screens::update::Message::MetadatasLoaded((total_cards, _)) => {
+                    screens::update::Message::MetadatasLoaded(metadatas_result) => {
+                        let Ok((total_cards, _)) = metadatas_result else {
+                            return Command::none();
+                        };
+
                         let already_present_in_db = db::get_all_cards_number(&self.config);
                         if already_present_in_db.len() == total_cards.clone() as usize {
                             self.navigate_to_extensions();

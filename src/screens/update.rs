@@ -13,7 +13,7 @@ use crate::widget::Element;
 
 #[derive(Debug, Clone)]
 pub enum Message {
-    MetadatasLoaded((u32, u32)),
+    MetadatasLoaded(Result<(u32, u32), cards_updater::ErrorKind>),
     CardsListLoaded(Vec<String>),
     CardFetched(Event),
 }
@@ -48,7 +48,12 @@ impl CardsUpdater {
 
     pub fn update(&mut self, config: &Config, message: Message) -> Command<Message> {
         match message {
-            Message::MetadatasLoaded((number_of_cards, number_of_pages)) => {
+            Message::MetadatasLoaded(metadatas_result) => {
+                let Ok((number_of_cards, number_of_pages)) = metadatas_result else {
+                    println!("Error in update, {:?}", metadatas_result.err());
+                    return Command::none();
+                };
+
                 self.total_cards = number_of_cards;
                 self.number_of_pages = number_of_pages;
 
@@ -73,6 +78,9 @@ impl CardsUpdater {
                 }
                 Event::Finished => {
                     self.step = DownloadStep::Finished;
+                }
+                Event::Error(error) => {
+                    println!("{:?}", error);
                 }
             },
         }
@@ -149,20 +157,27 @@ enum State {
 enum MetadataState {
     FetchNumberOfCards,
     MetadatasFetched,
+    Error,
 }
 
-fn fetch_metadata() -> iced::Subscription<(u32, u32)> {
+fn fetch_metadata() -> iced::Subscription<Result<(u32, u32), cards_updater::ErrorKind>> {
     subscription::unfold(
         "list_metadata_task",
         MetadataState::FetchNumberOfCards,
         |state| async move {
             match state {
-                MetadataState::FetchNumberOfCards => {
-                    let number_of_cards = get_number_of_cards().await.unwrap();
-                    let max_page = get_max_page().await;
-                    ((number_of_cards, max_page), MetadataState::MetadatasFetched)
-                }
+                MetadataState::FetchNumberOfCards => match get_number_of_cards().await {
+                    Ok(number_of_cards) => {
+                        let max_page = get_max_page().await;
+                        (
+                            Ok((number_of_cards, max_page)),
+                            MetadataState::MetadatasFetched,
+                        )
+                    }
+                    Err(error) => (Err(error), MetadataState::Error),
+                },
                 MetadataState::MetadatasFetched => iced::futures::future::pending().await,
+                MetadataState::Error => iced::futures::future::pending().await,
             }
         },
     )
@@ -177,7 +192,7 @@ fn fetch_cards_list(total_pages_number: u32) -> iced::Subscription<Vec<String>> 
                 State::CardsListFetchReady => {
                     let mut all_cards = Vec::new();
                     for page_number in 1..=total_pages_number {
-                        let cards_list = get_cards(page_number).await;
+                        let cards_list = get_cards(page_number).await.unwrap();
                         all_cards.extend(cards_list.into_iter());
                     }
                     (all_cards, State::CardsListFetchFinished)
@@ -192,6 +207,7 @@ fn fetch_cards_list(total_pages_number: u32) -> iced::Subscription<Vec<String>> 
 pub enum Event {
     Card(Card),
     Finished,
+    Error(cards_updater::ErrorKind),
 }
 
 fn fetch_single_card(cards: Vec<String>, covers_path: PathBuf) -> iced::Subscription<Event> {
@@ -204,8 +220,14 @@ fn fetch_single_card(cards: Vec<String>, covers_path: PathBuf) -> iced::Subscrip
             let mut cards = cards.iter().clone();
 
             while let Some(current_card) = cards.next() {
-                let card = cards_updater::download_card(&current_card, &covers_path);
-                let _ = output.send(Event::Card(card)).await;
+                match cards_updater::download_card(&current_card, &covers_path) {
+                    Ok(card) => {
+                        let _ = output.send(Event::Card(card)).await;
+                    }
+                    Err(error) => {
+                        let _ = output.send(Event::Error(error)).await;
+                    }
+                };
             }
 
             loop {
