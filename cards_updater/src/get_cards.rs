@@ -1,17 +1,16 @@
 use std::{fs::File, io::BufWriter, path::PathBuf};
 
+use crate::ErrorKind;
 use data::cards::{Card, CardClass, GameExtension};
-use scraper::{element_ref::Select, selectable::Selectable};
+use scraper::selectable::Selectable;
 
 use crate::get_number_of_cards::get_number_of_cards;
-
-// TODO: Create an error kind with thiserror and delete all the .unwrap()
 
 const CARDS_PER_PAGE: u32 = 15;
 const PAGE_API_URL: &str = "https://en.shadowverse-evolve.com/cards/searchresults_ex?card_name=&class%5B0%5D=all&title=&expansion_name=&cost%5B0%5D=all&card_kind%5B0%5D=all&rare%5B0%5D=all&power_from=&power_to=&hp_from=&hp_to=&type=&ability=&keyword=&view=text&t=1711058152734&_=1711057240616&sort=no";
 const DETAIL_PAGE_URL: &str = "https://en.shadowverse-evolve.com/cards/?cardno=";
 
-pub async fn get_cards(page: u32) -> Vec<String> {
+pub async fn get_cards(page: u32) -> Result<Vec<String>, ErrorKind> {
     let cards_list = get_cards_list(page); // Get all the card numbers
     cards_list
 }
@@ -21,20 +20,24 @@ pub async fn get_max_page() -> u32 {
     number_of_cards.div_ceil(CARDS_PER_PAGE)
 }
 
-pub fn download_card(card_number: &str, covers_directory: &PathBuf) -> Card {
+pub fn download_card(card_number: &str, covers_directory: &PathBuf) -> Result<Card, ErrorKind> {
     // Extract the data from the card detail page
     let response = ureq::get(&format!("{}{}", DETAIL_PAGE_URL, card_number))
         .call()
         .unwrap()
         .into_string()
-        .unwrap();
+        .map_err(|_| ErrorKind::DownloadCardError {
+            card_number: card_number.to_string(),
+        })?;
     let html_card = scraper::Html::parse_document(&response);
 
     let name = html_card
         .select(&scraper::Selector::parse(".ttl").unwrap())
         .next()
         .map(|p| p.text().collect::<String>())
-        .unwrap();
+        .ok_or(ErrorKind::DownloadCardError {
+            card_number: card_number.to_string(),
+        })?;
 
     let first_illustrator_selector = scraper::Selector::parse(".illustrator").unwrap();
     let card_number = html_card
@@ -46,16 +49,34 @@ pub fn download_card(card_number: &str, covers_directory: &PathBuf) -> Card {
                 .last()
                 .unwrap()
         })
-        .unwrap();
+        .ok_or(ErrorKind::DownloadCardError {
+            card_number: card_number.to_string(),
+        })?;
 
     let infos_selector = scraper::Selector::parse(".info dl").unwrap();
     let infos = html_card.select(&infos_selector);
 
-    let card_class = get_from_block_with_text("Class", &infos);
-    let card_type = get_from_block_with_text("Card Type", &infos);
-    let card_trait = get_from_block_with_text("Trait", &infos);
-    let card_rarity = get_from_block_with_text("Rarity", &infos);
-    let card_extension = get_from_block_with_text("Card Set", &infos);
+    let card_class =
+        get_from_block_with_text("Class", &infos).map_err(|_| ErrorKind::DownloadCardError {
+            card_number: card_number.to_string(),
+        })?;
+    let card_type = get_from_block_with_text("Card Type", &infos).map_err(|_| {
+        ErrorKind::DownloadCardError {
+            card_number: card_number.to_string(),
+        }
+    })?;
+    let card_trait =
+        get_from_block_with_text("Trait", &infos).map_err(|_| ErrorKind::DownloadCardError {
+            card_number: card_number.to_string(),
+        })?;
+    let card_rarity =
+        get_from_block_with_text("Rarity", &infos).map_err(|_| ErrorKind::DownloadCardError {
+            card_number: card_number.to_string(),
+        })?;
+    let card_extension =
+        get_from_block_with_text("Card Set", &infos).map_err(|_| ErrorKind::DownloadCardError {
+            card_number: card_number.to_string(),
+        })?;
 
     let details = html_card
         .select(&scraper::Selector::parse(".detail p").unwrap())
@@ -68,7 +89,7 @@ pub fn download_card(card_number: &str, covers_directory: &PathBuf) -> Card {
 
     let extension_id = get_extension_id(&card_number);
 
-    Card {
+    Ok(Card {
         id: card_number.to_string().clone(),
         name,
         card_class: CardClass::from(card_class),
@@ -80,10 +101,13 @@ pub fn download_card(card_number: &str, covers_directory: &PathBuf) -> Card {
             id: extension_id.to_string(),
             name: card_extension,
         },
-    }
+    })
 }
 
-fn get_from_block_with_text(text_to_search: &str, infos: &scraper::html::Select) -> String {
+fn get_from_block_with_text(
+    text_to_search: &str,
+    infos: &scraper::html::Select,
+) -> Result<String, ()> {
     let label_selector = scraper::Selector::parse("dt").unwrap();
     let content_selector = scraper::Selector::parse("dd").unwrap();
     for line in infos.clone().into_iter() {
@@ -91,33 +115,35 @@ fn get_from_block_with_text(text_to_search: &str, infos: &scraper::html::Select)
             .select(&label_selector)
             .next()
             .map(|dt| dt.text().collect::<String>())
-            .unwrap();
+            .ok_or(())?;
         let content = line
             .select(&content_selector)
             .next()
             .map(|dd| dd.text().collect::<String>())
-            .unwrap();
+            .ok_or(())?;
 
         if label == text_to_search {
-            return content;
+            return Ok(content);
         }
     }
 
-    "Unknown".to_string()
+    Ok("Unknown".to_string())
 }
 
 fn get_extension_id(card_number: &str) -> &str {
     card_number.split("-").next().unwrap()
 }
 
-fn get_cards_list(page_index: u32) -> Vec<String> {
+fn get_cards_list(page_index: u32) -> Result<Vec<String>, ErrorKind> {
     let mut cards_number = Vec::new();
 
     let response = ureq::get(&format!("{}&page={}", PAGE_API_URL, page_index))
         .call()
         .unwrap()
         .into_string()
-        .unwrap();
+        .map_err(|_| ErrorKind::GetMetadatasError {
+            page_number: page_index,
+        })?;
     let html = scraper::Html::parse_document(&response);
     let cards_selector = scraper::Selector::parse("li").unwrap();
     let html_cards = html.select(&cards_selector);
@@ -126,13 +152,15 @@ fn get_cards_list(page_index: u32) -> Vec<String> {
             .select(&scraper::Selector::parse(".number").unwrap())
             .next()
             .map(|p| p.text().collect::<String>())
-            .unwrap();
+            .ok_or(ErrorKind::GetMetadatasError {
+                page_number: page_index,
+            })?;
 
         cards_number.push(card_number);
     }
     println!("Page {}", page_index);
 
-    cards_number
+    Ok(cards_number)
 }
 
 fn get_image(card_number: &str, output_directory: &PathBuf) {
