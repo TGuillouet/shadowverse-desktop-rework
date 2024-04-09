@@ -93,7 +93,9 @@ pub fn get_extensions(config: &Config) -> Vec<ExtensionProgression> {
         Connection::open(config.db_file.clone()).expect("Could open the database file");
 
     // Get the extensions from the db
-    let mut statement = connection.prepare("SELECT * FROM extension").unwrap();
+    let mut statement = connection
+        .prepare("SELECT * FROM extension ORDER BY name")
+        .unwrap();
     let res = statement.query_map([], |row| {
         Ok(GameExtension {
             id: row.get_unwrap("id"),
