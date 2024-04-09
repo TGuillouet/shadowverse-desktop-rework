@@ -30,12 +30,17 @@ impl ExtensionsList {
             .map(|progress| extension_progress(&progress))
             .collect();
 
-        container(scrollable(column(extensions_widgets).max_width(800.0)))
-            .padding([15.0, 0.0])
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .align_x(iced::alignment::Horizontal::Center)
-            .into()
+        container(scrollable(
+            column(extensions_widgets)
+                .spacing(15.0)
+                .padding([0.0, 15.0])
+                .max_width(900.0),
+        ))
+        .padding([30.0, 0.0])
+        .width(Length::Fill)
+        .height(Length::Fill)
+        .align_x(iced::alignment::Horizontal::Center)
+        .into()
     }
 }
 
