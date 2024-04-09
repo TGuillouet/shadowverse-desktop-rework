@@ -1,5 +1,5 @@
 use data::{config::Config, db::setup_db};
-use iced::{Application, Settings};
+use iced::{window, Application, Settings, Size};
 
 mod app;
 mod screens;
@@ -13,9 +13,16 @@ fn main() -> Result<(), iced::Error> {
     let _ = setup_db(&config);
 
     let default_settings = Settings::<()>::default();
+    let window = window::Settings {
+        size: Size {
+            width: 1280.0,
+            height: 900.0,
+        },
+        ..default_settings.clone().window
+    };
     let settings = Settings {
         id: default_settings.id,
-        window: default_settings.window,
+        window,
         flags: config,
         fonts: default_settings.fonts,
         default_font: default_settings.default_font,
