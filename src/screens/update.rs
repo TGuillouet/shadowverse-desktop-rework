@@ -53,6 +53,7 @@ impl CardsUpdater {
                     println!("Error in update, {:?}", metadatas_result.err());
                     return Command::none();
                 };
+                println!("{:?}", number_of_cards);
 
                 self.total_cards = number_of_cards;
                 self.number_of_pages = number_of_pages;
@@ -61,8 +62,9 @@ impl CardsUpdater {
             }
             Message::CardsListLoaded(cards_list) => {
                 let cards_list = exclude_already_downloaded(cards_list.clone(), config);
+                println!("Without already downloaded {:?}", cards_list.len());
 
-                if cards_list.len() == self.total_cards as usize {
+                if cards_list.len() - self.total_cards as usize != 0 {
                     self.step = DownloadStep::Finished;
                 } else {
                     self.current_card_index = self.total_cards as usize - cards_list.len();
@@ -76,9 +78,7 @@ impl CardsUpdater {
                     self.current_card_index += 1;
                     self.current_card_name = card.name;
                 }
-                Event::Finished => {
-                    self.step = DownloadStep::Finished;
-                }
+                Event::Finished => {}
                 Event::Error(error) => {
                     println!("{:?}", error);
                 }
@@ -206,8 +206,8 @@ fn fetch_cards_list(total_pages_number: u32) -> iced::Subscription<Vec<String>> 
 #[derive(Debug, Clone)]
 pub enum Event {
     Card(Card),
-    Finished,
     Error(cards_updater::ErrorKind),
+    Finished,
 }
 
 fn fetch_single_card(cards: Vec<String>, covers_path: PathBuf) -> iced::Subscription<Event> {
@@ -219,6 +219,7 @@ fn fetch_single_card(cards: Vec<String>, covers_path: PathBuf) -> iced::Subscrip
         move |mut output| async move {
             let mut cards = cards.iter().clone();
 
+            println!("{:?}", cards);
             while let Some(current_card) = cards.next() {
                 match cards_updater::download_card(&current_card, &covers_path) {
                     Ok(card) => {
@@ -230,15 +231,15 @@ fn fetch_single_card(cards: Vec<String>, covers_path: PathBuf) -> iced::Subscrip
                 };
             }
 
-            loop {
-                let _ = output.send(Event::Finished).await;
-            }
+            let _ = output.send(Event::Finished).await;
+            iced::futures::future::pending().await
         },
     )
 }
 
 fn exclude_already_downloaded(cards_list: Vec<String>, config: &Config) -> Vec<String> {
     let already_downloaded: Vec<String> = db::get_all_cards_number(config);
+    println!("Already downloaded {}", already_downloaded.len());
     let item_set: HashSet<String> = already_downloaded.into_iter().collect();
     cards_list
         .into_iter()
