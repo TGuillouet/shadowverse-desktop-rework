@@ -75,24 +75,17 @@ impl Application for IcedApplication {
 
                 match &message {
                     screens::update::Message::CardFetched(event) => match event {
+                        screens::update::Event::MetadatasList(total_cards) => {
+                            let already_present_in_db = db::get_all_cards_number(&self.config);
+                            if already_present_in_db.len() == total_cards.clone() as usize {
+                                self.navigate_to_extensions();
+                            }
+                        }
                         screens::update::Event::Finished => {
                             self.navigate_to_extensions();
-                            return Command::none();
                         }
                         _ => {}
                     },
-                    screens::update::Message::MetadatasLoaded(metadatas_result) => {
-                        let Ok((total_cards, _)) = metadatas_result else {
-                            return Command::none();
-                        };
-
-                        let already_present_in_db = db::get_all_cards_number(&self.config);
-                        if already_present_in_db.len() == total_cards.clone() as usize {
-                            self.navigate_to_extensions();
-                        }
-                        return Command::none();
-                    }
-                    _ => {}
                 };
 
                 command

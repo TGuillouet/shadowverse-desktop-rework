@@ -1,4 +1,4 @@
-use std::{collections::HashSet, path::PathBuf, sync::Arc};
+use std::{collections::HashSet, sync::Arc};
 
 use cards_updater::{get_cards, get_max_page, get_number_of_cards};
 use data::{cards::Card, config::Config, db};
@@ -6,15 +6,13 @@ use iced::{
     futures::SinkExt,
     subscription,
     widget::{column, container, progress_bar, text},
-    Command, Length, Subscription,
+    Command, Length,
 };
 
 use crate::widget::Element;
 
 #[derive(Debug, Clone)]
 pub enum Message {
-    MetadatasLoaded(Result<(u32, u32), cards_updater::ErrorKind>),
-    CardsListLoaded(Vec<String>),
     CardFetched(Event),
 }
 
@@ -24,7 +22,6 @@ pub struct CardsUpdater {
     current_card_name: String,
 
     total_cards: u32,
-    number_of_pages: u32,
 
     step: DownloadStep,
 }
@@ -36,7 +33,6 @@ impl CardsUpdater {
             current_card_name: "".to_string(),
 
             total_cards: 0,
-            number_of_pages: 0,
 
             step: DownloadStep::Metadatas,
         }
@@ -48,31 +44,34 @@ impl CardsUpdater {
 
     pub fn update(&mut self, config: &Config, message: Message) -> Command<Message> {
         match message {
-            Message::MetadatasLoaded(metadatas_result) => {
-                let Ok((number_of_cards, number_of_pages)) = metadatas_result else {
-                    println!("Error in update, {:?}", metadatas_result.err());
-                    return Command::none();
-                };
-                println!("{:?}", number_of_cards);
-
-                self.total_cards = number_of_cards;
-                self.number_of_pages = number_of_pages;
-
-                self.step = DownloadStep::CardsList { number_of_pages };
-            }
-            Message::CardsListLoaded(cards_list) => {
-                let cards_list = exclude_already_downloaded(cards_list.clone(), config);
-                println!("Without already downloaded {:?}", cards_list.len());
-
-                if cards_list.len() - self.total_cards as usize != 0 {
-                    self.step = DownloadStep::Finished;
-                } else {
-                    self.current_card_index = self.total_cards as usize - cards_list.len();
-                    self.step = DownloadStep::Card(cards_list);
-                }
-            }
+            // Message::MetadatasLoaded(metadatas_result) => {
+            //     let Ok((number_of_cards, number_of_pages)) = metadatas_result else {
+            //         println!("Error in update, {:?}", metadatas_result.err());
+            //         return Command::none();
+            //     };
+            //     println!("{:?}", number_of_cards);
+            //
+            //     self.total_cards = number_of_cards;
+            //     self.number_of_pages = number_of_pages;
+            //
+            //     self.step = DownloadStep::CardsList { number_of_pages };
+            // }
+            // Message::CardsListLoaded(cards_list) => {
+            //     let cards_list = exclude_already_downloaded(cards_list.clone(), config);
+            //     println!("Without already downloaded {:?}", cards_list.len());
+            //
+            //     if cards_list.len() - self.total_cards as usize != 0 {
+            //         self.step = DownloadStep::Finished;
+            //     } else {
+            //         self.current_card_index = self.total_cards as usize - cards_list.len();
+            //         self.step = DownloadStep::Card(cards_list);
+            //     }
+            // }
             Message::CardFetched(event) => match event {
-                Event::MetadatasList(total_cards) => self.total_cards = total_cards,
+                Event::MetadatasList(total_cards) => {
+                    self.total_cards = total_cards;
+                    self.step = DownloadStep::Card(Vec::new());
+                }
                 Event::MetadataPart { part, total_parts } => {
                     println!("Part {} of {}", part, total_parts);
                 }
@@ -94,10 +93,7 @@ impl CardsUpdater {
 
     pub fn view<'a>(&self) -> Element<'a, Message> {
         let screen = match &self.step {
-            DownloadStep::Metadatas => text("Fetching the number of available cards").into(),
-            DownloadStep::CardsList { number_of_pages: _ } => {
-                text("Extracting the list of cards").into()
-            }
+            DownloadStep::Metadatas => text("Loading the metadatas").into(),
             DownloadStep::Card(_) => self.card_sync_view(),
             DownloadStep::Finished => text("Finished").into(),
         };
@@ -131,82 +127,14 @@ impl CardsUpdater {
 
     pub fn subscription(&self, config: Arc<Config>) -> iced::Subscription<Message> {
         fetch_single_card(config.clone()).map(Message::CardFetched)
-        // match self.step.clone() {
-        //     DownloadStep::Metadatas => fetch_metadata().map(Message::MetadatasLoaded),
-        //     DownloadStep::CardsList { number_of_pages } => {
-        //         fetch_cards_list(number_of_pages).map(Message::CardsListLoaded)
-        //     }
-        //     DownloadStep::Card(cards_list) => {
-        //         fetch_single_card(cards_list.clone(), config.covers_directory.clone())
-        //             .map(Message::CardFetched)
-        //     }
-        //     _ => Subscription::none(),
-        // }
     }
 }
 
 #[derive(Debug, Clone)]
 enum DownloadStep {
     Metadatas,
-    CardsList { number_of_pages: u32 },
     Card(Vec<String>),
-    Finished,
 }
-
-// #[derive(Debug)]
-// enum State {
-//     CardsListFetchReady,
-//     CardsListFetchFinished,
-// }
-
-// enum MetadataState {
-//     FetchNumberOfCards,
-//     MetadatasFetched,
-//     Error,
-// }
-
-// fn fetch_metadata() -> iced::Subscription<Result<(u32, u32), cards_updater::ErrorKind>> {
-//     subscription::unfold(
-//         "list_metadata_task",
-//         MetadataState::FetchNumberOfCards,
-//         |state| async move {
-//             match state {
-//                 MetadataState::FetchNumberOfCards => match get_number_of_cards().await {
-//                     Ok(number_of_cards) => {
-//                         let max_page = get_max_page().await;
-//                         (
-//                             Ok((number_of_cards, max_page)),
-//                             MetadataState::MetadatasFetched,
-//                         )
-//                     }
-//                     Err(error) => (Err(error), MetadataState::Error),
-//                 },
-//                 MetadataState::MetadatasFetched => iced::futures::future::pending().await,
-//                 MetadataState::Error => iced::futures::future::pending().await,
-//             }
-//         },
-//     )
-// }
-
-// fn fetch_cards_list(total_pages_number: u32) -> iced::Subscription<Vec<String>> {
-//     subscription::unfold(
-//         "cards_list_task",
-//         State::CardsListFetchReady,
-//         move |state| async move {
-//             match state {
-//                 State::CardsListFetchReady => {
-//                     let mut all_cards = Vec::new();
-//                     for page_number in 1..=total_pages_number {
-//                         let cards_list = get_cards(page_number).await.unwrap();
-//                         all_cards.extend(cards_list.into_iter());
-//                     }
-//                     (all_cards, State::CardsListFetchFinished)
-//                 }
-//                 State::CardsListFetchFinished => iced::futures::future::pending().await,
-//             }
-//         },
-//     )
-// }
 
 #[derive(Debug, Clone)]
 pub enum Event {
@@ -222,7 +150,7 @@ fn fetch_single_card(config: Arc<Config>) -> iced::Subscription<Event> {
 
     subscription::channel(
         std::any::TypeId::of::<DownloadCardsTask>(),
-        1,
+        0,
         move |mut output| async move {
             let Ok(number_of_cards) = get_number_of_cards().await else {
                 let _ = output
