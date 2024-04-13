@@ -44,29 +44,6 @@ impl CardsUpdater {
 
     pub fn update(&mut self, config: &Config, message: Message) -> Command<Message> {
         match message {
-            // Message::MetadatasLoaded(metadatas_result) => {
-            //     let Ok((number_of_cards, number_of_pages)) = metadatas_result else {
-            //         println!("Error in update, {:?}", metadatas_result.err());
-            //         return Command::none();
-            //     };
-            //     println!("{:?}", number_of_cards);
-            //
-            //     self.total_cards = number_of_cards;
-            //     self.number_of_pages = number_of_pages;
-            //
-            //     self.step = DownloadStep::CardsList { number_of_pages };
-            // }
-            // Message::CardsListLoaded(cards_list) => {
-            //     let cards_list = exclude_already_downloaded(cards_list.clone(), config);
-            //     println!("Without already downloaded {:?}", cards_list.len());
-            //
-            //     if cards_list.len() - self.total_cards as usize != 0 {
-            //         self.step = DownloadStep::Finished;
-            //     } else {
-            //         self.current_card_index = self.total_cards as usize - cards_list.len();
-            //         self.step = DownloadStep::Card(cards_list);
-            //     }
-            // }
             Message::CardFetched(event) => match event {
                 Event::MetadatasList(total_cards) => {
                     self.total_cards = total_cards;
