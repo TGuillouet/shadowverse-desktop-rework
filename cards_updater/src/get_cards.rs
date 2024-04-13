@@ -158,7 +158,6 @@ fn get_cards_list(page_index: u32) -> Result<Vec<String>, ErrorKind> {
 
         cards_number.push(card_number);
     }
-    println!("Page {}", page_index);
 
     Ok(cards_number)
 }

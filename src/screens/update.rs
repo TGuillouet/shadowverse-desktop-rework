@@ -1,4 +1,4 @@
-use std::{collections::HashSet, path::PathBuf};
+use std::{collections::HashSet, path::PathBuf, sync::Arc};
 
 use cards_updater::{get_cards, get_max_page, get_number_of_cards};
 use data::{cards::Card, config::Config, db};
@@ -72,6 +72,10 @@ impl CardsUpdater {
                 }
             }
             Message::CardFetched(event) => match event {
+                Event::MetadatasList(total_cards) => self.total_cards = total_cards,
+                Event::MetadataPart { part, total_parts } => {
+                    println!("Part {} of {}", part, total_parts);
+                }
                 Event::Card(card) => {
                     let _ = db::upsert_card(&config, card.clone());
 
@@ -125,18 +129,19 @@ impl CardsUpdater {
         .into()
     }
 
-    pub fn subscription(&self, config: &Config) -> iced::Subscription<Message> {
-        match self.step.clone() {
-            DownloadStep::Metadatas => fetch_metadata().map(Message::MetadatasLoaded),
-            DownloadStep::CardsList { number_of_pages } => {
-                fetch_cards_list(number_of_pages).map(Message::CardsListLoaded)
-            }
-            DownloadStep::Card(cards_list) => {
-                fetch_single_card(cards_list.clone(), config.covers_directory.clone())
-                    .map(Message::CardFetched)
-            }
-            _ => Subscription::none(),
-        }
+    pub fn subscription(&self, config: Arc<Config>) -> iced::Subscription<Message> {
+        fetch_single_card(config.clone()).map(Message::CardFetched)
+        // match self.step.clone() {
+        //     DownloadStep::Metadatas => fetch_metadata().map(Message::MetadatasLoaded),
+        //     DownloadStep::CardsList { number_of_pages } => {
+        //         fetch_cards_list(number_of_pages).map(Message::CardsListLoaded)
+        //     }
+        //     DownloadStep::Card(cards_list) => {
+        //         fetch_single_card(cards_list.clone(), config.covers_directory.clone())
+        //             .map(Message::CardFetched)
+        //     }
+        //     _ => Subscription::none(),
+        // }
     }
 }
 
@@ -148,80 +153,105 @@ enum DownloadStep {
     Finished,
 }
 
-#[derive(Debug)]
-enum State {
-    CardsListFetchReady,
-    CardsListFetchFinished,
-}
+// #[derive(Debug)]
+// enum State {
+//     CardsListFetchReady,
+//     CardsListFetchFinished,
+// }
 
-enum MetadataState {
-    FetchNumberOfCards,
-    MetadatasFetched,
-    Error,
-}
+// enum MetadataState {
+//     FetchNumberOfCards,
+//     MetadatasFetched,
+//     Error,
+// }
 
-fn fetch_metadata() -> iced::Subscription<Result<(u32, u32), cards_updater::ErrorKind>> {
-    subscription::unfold(
-        "list_metadata_task",
-        MetadataState::FetchNumberOfCards,
-        |state| async move {
-            match state {
-                MetadataState::FetchNumberOfCards => match get_number_of_cards().await {
-                    Ok(number_of_cards) => {
-                        let max_page = get_max_page().await;
-                        (
-                            Ok((number_of_cards, max_page)),
-                            MetadataState::MetadatasFetched,
-                        )
-                    }
-                    Err(error) => (Err(error), MetadataState::Error),
-                },
-                MetadataState::MetadatasFetched => iced::futures::future::pending().await,
-                MetadataState::Error => iced::futures::future::pending().await,
-            }
-        },
-    )
-}
+// fn fetch_metadata() -> iced::Subscription<Result<(u32, u32), cards_updater::ErrorKind>> {
+//     subscription::unfold(
+//         "list_metadata_task",
+//         MetadataState::FetchNumberOfCards,
+//         |state| async move {
+//             match state {
+//                 MetadataState::FetchNumberOfCards => match get_number_of_cards().await {
+//                     Ok(number_of_cards) => {
+//                         let max_page = get_max_page().await;
+//                         (
+//                             Ok((number_of_cards, max_page)),
+//                             MetadataState::MetadatasFetched,
+//                         )
+//                     }
+//                     Err(error) => (Err(error), MetadataState::Error),
+//                 },
+//                 MetadataState::MetadatasFetched => iced::futures::future::pending().await,
+//                 MetadataState::Error => iced::futures::future::pending().await,
+//             }
+//         },
+//     )
+// }
 
-fn fetch_cards_list(total_pages_number: u32) -> iced::Subscription<Vec<String>> {
-    subscription::unfold(
-        "cards_list_task",
-        State::CardsListFetchReady,
-        move |state| async move {
-            match state {
-                State::CardsListFetchReady => {
-                    let mut all_cards = Vec::new();
-                    for page_number in 1..=total_pages_number {
-                        let cards_list = get_cards(page_number).await.unwrap();
-                        all_cards.extend(cards_list.into_iter());
-                    }
-                    (all_cards, State::CardsListFetchFinished)
-                }
-                State::CardsListFetchFinished => iced::futures::future::pending().await,
-            }
-        },
-    )
-}
+// fn fetch_cards_list(total_pages_number: u32) -> iced::Subscription<Vec<String>> {
+//     subscription::unfold(
+//         "cards_list_task",
+//         State::CardsListFetchReady,
+//         move |state| async move {
+//             match state {
+//                 State::CardsListFetchReady => {
+//                     let mut all_cards = Vec::new();
+//                     for page_number in 1..=total_pages_number {
+//                         let cards_list = get_cards(page_number).await.unwrap();
+//                         all_cards.extend(cards_list.into_iter());
+//                     }
+//                     (all_cards, State::CardsListFetchFinished)
+//                 }
+//                 State::CardsListFetchFinished => iced::futures::future::pending().await,
+//             }
+//         },
+//     )
+// }
 
 #[derive(Debug, Clone)]
 pub enum Event {
+    MetadatasList(u32),
+    MetadataPart { part: u8, total_parts: u8 },
     Card(Card),
     Error(cards_updater::ErrorKind),
     Finished,
 }
 
-fn fetch_single_card(cards: Vec<String>, covers_path: PathBuf) -> iced::Subscription<Event> {
+fn fetch_single_card(config: Arc<Config>) -> iced::Subscription<Event> {
     struct DownloadCardsTask;
 
     subscription::channel(
         std::any::TypeId::of::<DownloadCardsTask>(),
-        0,
+        1,
         move |mut output| async move {
-            let mut cards = cards.iter().clone();
+            let Ok(number_of_cards) = get_number_of_cards().await else {
+                let _ = output
+                    .send(Event::Error(cards_updater::ErrorKind::NumberOfCardsError))
+                    .await;
+                return iced::futures::future::pending().await;
+            };
 
-            println!("{:?}", cards);
-            while let Some(current_card) = cards.next() {
-                match cards_updater::download_card(&current_card, &covers_path) {
+            let _ = output.send(Event::MetadatasList(number_of_cards)).await;
+
+            let max_page = get_max_page().await;
+
+            let mut cards = Vec::new();
+            for page_number in 1..=max_page {
+                let cards_list = get_cards(page_number).await.unwrap();
+                cards.extend(cards_list.into_iter());
+
+                let _ = output
+                    .send(Event::MetadataPart {
+                        part: page_number as u8,
+                        total_parts: max_page as u8,
+                    })
+                    .await;
+            }
+
+            let cards = exclude_already_downloaded(cards.clone(), &config);
+
+            while let Some(current_card) = cards.iter().next() {
+                match cards_updater::download_card(&current_card, &config.covers_directory) {
                     Ok(card) => {
                         let _ = output.send(Event::Card(card)).await;
                     }

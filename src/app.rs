@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use data::{
     collection::ExtensionProgression,
     config::Config,
@@ -25,7 +27,7 @@ pub enum AppScreens {
 }
 
 pub struct IcedApplication {
-    config: Config,
+    config: Arc<Config>,
     screen: AppScreens,
 }
 
@@ -51,7 +53,7 @@ impl Application for IcedApplication {
 
     fn new(flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
         let application = Self {
-            config: flags,
+            config: Arc::new(flags),
             screen: AppScreens::CardsListUpdater(screens::update::CardsUpdater::new()),
         };
         (application, Command::none())
@@ -149,7 +151,7 @@ impl Application for IcedApplication {
     fn subscription(&self) -> iced::Subscription<Self::Message> {
         match &self.screen {
             AppScreens::CardsListUpdater(screen) => screen
-                .subscription(&self.config)
+                .subscription(self.config.clone())
                 .map(ApplicationMessage::CardsListUpdater),
             _ => Subscription::none(),
         }
