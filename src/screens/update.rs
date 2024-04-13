@@ -70,10 +70,10 @@ impl CardsUpdater {
             Message::CardFetched(event) => match event {
                 Event::MetadatasList(total_cards) => {
                     self.total_cards = total_cards;
-                    self.step = DownloadStep::Card(Vec::new());
+                    self.step = DownloadStep::Card;
                 }
-                Event::MetadataPart { part, total_parts } => {
-                    println!("Part {} of {}", part, total_parts);
+                Event::IncreaseDownloadedCounter(increment) => {
+                    self.current_card_index += increment;
                 }
                 Event::Card(card) => {
                     let _ = db::upsert_card(&config, card.clone());
@@ -94,8 +94,7 @@ impl CardsUpdater {
     pub fn view<'a>(&self) -> Element<'a, Message> {
         let screen = match &self.step {
             DownloadStep::Metadatas => text("Loading the metadatas").into(),
-            DownloadStep::Card(_) => self.card_sync_view(),
-            DownloadStep::Finished => text("Finished").into(),
+            DownloadStep::Card => self.card_sync_view(),
         };
 
         container(screen)
@@ -133,13 +132,13 @@ impl CardsUpdater {
 #[derive(Debug, Clone)]
 enum DownloadStep {
     Metadatas,
-    Card(Vec<String>),
+    Card,
 }
 
 #[derive(Debug, Clone)]
 pub enum Event {
     MetadatasList(u32),
-    MetadataPart { part: u8, total_parts: u8 },
+    IncreaseDownloadedCounter(usize),
     Card(Card),
     Error(cards_updater::ErrorKind),
     Finished,
@@ -163,30 +162,27 @@ fn fetch_single_card(config: Arc<Config>) -> iced::Subscription<Event> {
 
             let max_page = get_max_page().await;
 
-            let mut cards = Vec::new();
             for page_number in 1..=max_page {
-                let cards_list = get_cards(page_number).await.unwrap();
-                cards.extend(cards_list.into_iter());
+                let cards = get_cards(page_number).await.unwrap();
+                let cards_to_download = exclude_already_downloaded(cards.clone(), &config);
 
                 let _ = output
-                    .send(Event::MetadataPart {
-                        part: page_number as u8,
-                        total_parts: max_page as u8,
-                    })
+                    .send(Event::IncreaseDownloadedCounter(
+                        cards.len() - cards_to_download.len(),
+                    ))
                     .await;
-            }
 
-            let cards = exclude_already_downloaded(cards.clone(), &config);
-
-            while let Some(current_card) = cards.iter().next() {
-                match cards_updater::download_card(&current_card, &config.covers_directory) {
-                    Ok(card) => {
-                        let _ = output.send(Event::Card(card)).await;
-                    }
-                    Err(error) => {
-                        let _ = output.send(Event::Error(error)).await;
-                    }
-                };
+                let mut cards_iter = cards_to_download.iter();
+                while let Some(current_card) = cards_iter.next() {
+                    match cards_updater::download_card(&current_card, &config.covers_directory) {
+                        Ok(card) => {
+                            let _ = output.send(Event::Card(card)).await;
+                        }
+                        Err(error) => {
+                            let _ = output.send(Event::Error(error)).await;
+                        }
+                    };
+                }
             }
 
             let _ = output.send(Event::Finished).await;
@@ -197,7 +193,6 @@ fn fetch_single_card(config: Arc<Config>) -> iced::Subscription<Event> {
 
 fn exclude_already_downloaded(cards_list: Vec<String>, config: &Config) -> Vec<String> {
     let already_downloaded: Vec<String> = db::get_all_cards_number(config);
-    println!("Already downloaded {}", already_downloaded.len());
     let item_set: HashSet<String> = already_downloaded.into_iter().collect();
     cards_list
         .into_iter()
