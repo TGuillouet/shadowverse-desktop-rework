@@ -8,6 +8,7 @@ use iced::{
     widget::{column, container, progress_bar, text},
     Command, Length,
 };
+use tokio::task::JoinSet;
 
 use crate::widget::Element;
 
@@ -139,27 +140,71 @@ fn fetch_single_card(config: Arc<Config>) -> iced::Subscription<Event> {
 
             let max_page = get_max_page().await;
 
+            let mut join_set = JoinSet::new();
             for page_number in 1..=max_page {
-                let cards = get_cards(page_number).await.unwrap();
-                let cards_to_download = exclude_already_downloaded(cards.clone(), &config);
+                let config_clone_loop = config.clone();
+                let mut output_loop = output.clone();
+                join_set.spawn(async move {
+                    let cards = get_cards(page_number).await.unwrap();
+                    let cards_to_download =
+                        exclude_already_downloaded(cards.clone(), &config_clone_loop.clone());
+                    println!("Cards from task, {:?}", cards_to_download);
 
-                let _ = output
-                    .send(Event::IncreaseDownloadedCounter(
-                        cards.len() - cards_to_download.len(),
-                    ))
-                    .await;
+                    let r = output_loop
+                        .send(Event::IncreaseDownloadedCounter(
+                            cards.len() - cards_to_download.len(),
+                        ))
+                        .await
+                        .unwrap();
+                    println!("{:?}", r);
 
-                let mut cards_iter = cards_to_download.iter();
-                while let Some(current_card) = cards_iter.next() {
-                    match cards_updater::download_card(&current_card, &config.covers_directory) {
-                        Ok(card) => {
-                            let _ = output.send(Event::Card(card)).await;
-                        }
-                        Err(error) => {
-                            let _ = output.send(Event::Error(error)).await;
-                        }
-                    };
-                }
+                    let mut cards_iter = cards_to_download.iter();
+                    println!("Iterator created");
+                    while let Some(current_card) = cards_iter.next() {
+                        println!("{}", current_card);
+                        match cards_updater::download_card(
+                            &current_card,
+                            &config_clone_loop.clone().covers_directory,
+                        ) {
+                            Ok(card) => {
+                                println!("{}", card.name);
+                                let _ = output_loop.send(Event::Card(card)).await.unwrap();
+                            }
+                            Err(error) => {
+                                println!("{}", error);
+                                let _ = output_loop.send(Event::Error(error)).await.unwrap();
+                            }
+                        };
+                    }
+                });
+                // let cards = get_cards(page_number).await.unwrap();
+                // let cards_to_download =
+                //     exclude_already_downloaded(cards.clone(), &config_clone.clone());
+                //
+                // let _ = output
+                //     .send(Event::IncreaseDownloadedCounter(
+                //         cards.len() - cards_to_download.len(),
+                //     ))
+                //     .await;
+                //
+                // let mut cards_iter = cards_to_download.iter();
+                // while let Some(current_card) = cards_iter.next() {
+                //     match cards_updater::download_card(
+                //         &current_card,
+                //         &config_clone.clone().covers_directory,
+                //     ) {
+                //         Ok(card) => {
+                //             let _ = output.send(Event::Card(card)).await;
+                //         }
+                //         Err(error) => {
+                //             let _ = output.send(Event::Error(error)).await;
+                //         }
+                //     };
+                // }
+            }
+
+            while let Some(_) = join_set.join_next().await {
+                println!("Received task");
             }
 
             let _ = output.send(Event::Finished).await;

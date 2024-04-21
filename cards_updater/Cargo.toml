@@ -11,3 +11,4 @@ rusqlite = { version = "0.31.0", features = ["bundled"] }
 data = { path = "../data/" }
 scraper = "0.19.0"
 thiserror = "1.0.58"
+tokio = "1.37.0"

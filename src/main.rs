@@ -2,6 +2,7 @@ use data::{config::Config, db::setup_db};
 use iced::{window, Application, Settings, Size};
 
 mod app;
+mod executor;
 mod screens;
 mod theme;
 mod widget;

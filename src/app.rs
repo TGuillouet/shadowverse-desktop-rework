@@ -46,7 +46,7 @@ impl IcedApplication {
 }
 
 impl Application for IcedApplication {
-    type Executor = iced::executor::Default;
+    type Executor = crate::executor::Executor;
     type Message = ApplicationMessage;
     type Theme = crate::theme::Theme;
     type Flags = Config;
