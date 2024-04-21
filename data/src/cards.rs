@@ -70,7 +70,6 @@ impl FromSql for CardClass {
 
 impl ToSql for CardClass {
     fn to_sql(&self) -> rusqlite::Result<rusqlite::types::ToSqlOutput<'_>> {
-        println!("{}", self.to_string());
         Ok(self.to_string().into())
     }
 }
