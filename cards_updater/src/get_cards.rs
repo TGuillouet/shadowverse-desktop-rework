@@ -1,4 +1,8 @@
-use std::{fs::File, io::BufWriter, path::PathBuf};
+use std::{
+    fs::File,
+    io::BufWriter,
+    path::{Path, PathBuf},
+};
 
 use crate::ErrorKind;
 use data::cards::{Card, CardClass, GameExtension};
@@ -11,8 +15,7 @@ const PAGE_API_URL: &str = "https://en.shadowverse-evolve.com/cards/searchresult
 const DETAIL_PAGE_URL: &str = "https://en.shadowverse-evolve.com/cards/?cardno=";
 
 pub async fn get_cards(page: u32) -> Result<Vec<String>, ErrorKind> {
-    let cards_list = get_cards_list(page); // Get all the card numbers
-    cards_list
+    get_cards_list(page) // Get all the card numbers
 }
 
 pub async fn get_max_page() -> u32 {
@@ -110,7 +113,7 @@ fn get_from_block_with_text(
 ) -> Result<String, ()> {
     let label_selector = scraper::Selector::parse("dt").unwrap();
     let content_selector = scraper::Selector::parse("dd").unwrap();
-    for line in infos.clone().into_iter() {
+    for line in infos.clone() {
         let label = line
             .select(&label_selector)
             .next()
@@ -131,7 +134,7 @@ fn get_from_block_with_text(
 }
 
 fn get_extension_id(card_number: &str) -> &str {
-    card_number.split("-").next().unwrap()
+    card_number.split('-').next().unwrap()
 }
 
 fn get_cards_list(page_index: u32) -> Result<Vec<String>, ErrorKind> {
@@ -162,7 +165,7 @@ fn get_cards_list(page_index: u32) -> Result<Vec<String>, ErrorKind> {
     Ok(cards_number)
 }
 
-fn get_image(card_number: &str, output_directory: &PathBuf) {
+fn get_image(card_number: &str, output_directory: &Path) {
     let mut extension_id = get_extension_id(card_number);
     if extension_id.contains("BSF") {
         extension_id = "PR";

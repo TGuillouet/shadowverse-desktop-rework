@@ -164,7 +164,7 @@ pub fn upsert_card(config: &Config, card: Card) -> Result<(), ()> {
         (
             &card.id,
             &card.name,
-            &CardClass::from(card.card_class),
+            &card.card_class,
             &card.rarity,
             &card.card_trait,
             &card.card_type,
@@ -173,7 +173,7 @@ pub fn upsert_card(config: &Config, card: Card) -> Result<(), ()> {
         ),
     );
 
-    if let Ok(_) = result {
+    if result.is_ok() {
         // Add the card_collection
         let _ = connection.execute(
             "INSERT INTO

@@ -77,7 +77,7 @@ fn extension_progress<'a>(progress: &ExtensionProgression) -> Element<'a, Messag
         .padding([0.0, 25.0])
         .width(Length::Fill)
         .height(Length::Fixed(60.0))
-        .style(crate::theme::Button::ExtensionButton)
+        .style(crate::theme::Button::Extension)
         .on_press(Message::ToDetails(progress.clone()))
         .into()
 }

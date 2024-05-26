@@ -77,7 +77,8 @@ impl CardsList {
 
                 self.extension_progression =
                     get_extension(config, &self.extension_progression.extension.id);
-                self.filtered_cards_list = self.extension_progression.extension_cards.clone();
+                self.filtered_cards_list
+                    .clone_from(&self.extension_progression.extension_cards);
                 self.filter_cards_list()
             }
             Message::Selected(card_class) => {
@@ -96,7 +97,7 @@ impl CardsList {
         Command::none()
     }
 
-    pub fn view<'a>(&'a self) -> Element<'a, Message> {
+    pub fn view(&self) -> Element<'_, Message> {
         let filters = row![
             text_input("Type the card name here", &self.filter_name)
                 .width(Length::FillPortion(3))
@@ -147,8 +148,8 @@ impl CardsList {
 }
 
 fn cards_list<'a>(
-    columns: &Vec<Column>,
-    collection_cards: &'a Vec<CollectionCard>,
+    columns: &[Column],
+    collection_cards: &'a [CollectionCard],
     quantities: &'a HashMap<String, String>,
 ) -> Element<'a, Message> {
     let headers = headers(columns);
@@ -160,7 +161,7 @@ fn cards_list<'a>(
             table_row(
                 &collection_card.card,
                 collection_card.is_owned,
-                quantity.unwrap_or_else(|| &default_quantity).clone(),
+                quantity.unwrap_or(&default_quantity).clone(),
             )
             .into()
         })
@@ -174,7 +175,7 @@ fn cards_list<'a>(
     .into()
 }
 
-fn headers<'a>(columns: &Vec<Column>) -> Element<'a, Message> {
+fn headers<'a>(columns: &[Column]) -> Element<'a, Message> {
     let columns: Vec<Element<'a, Message>> = columns
         .iter()
         .map(|column| text(column.name.to_string()).width(column.width).into())
@@ -182,11 +183,11 @@ fn headers<'a>(columns: &Vec<Column>) -> Element<'a, Message> {
     row(columns).into()
 }
 
-fn table_row<'a>(
-    card: &'a Card,
+fn table_row(
+    card: &Card,
     is_owned: bool,
     quantity: String,
-) -> TableRow<'a, Message, Theme, iced::Renderer> {
+) -> TableRow<'_, Message, Theme, iced::Renderer> {
     let mut elements_row = Row::new().padding([0.0, 10.0]);
 
     let owned_graphic = if is_owned {
