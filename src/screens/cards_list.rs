@@ -17,8 +17,6 @@ use crate::{theme::Theme, widget::Element};
 
 #[derive(Debug, Clone)]
 pub enum Message {
-    AddCard(Card),
-    RemoveCard(Card),
     UpdateQuantity(String, String),
     Selected(CardClass),
     FilterByName(String),
@@ -68,30 +66,6 @@ impl CardsList {
 
     pub fn update(&mut self, config: &Config, message: Message) -> Command<Message> {
         match message {
-            Message::AddCard(card) => {
-                println!("Add the card: {:?}", card);
-
-                // Save the cards in the extension
-                let _ = data::db::add_card_to_collection(config, card);
-
-                // Update the list
-                self.extension_progression =
-                    get_extension(config, &self.extension_progression.extension.id);
-                self.filtered_cards_list = self.extension_progression.extension_cards.clone();
-                self.filter_cards_list()
-            }
-            Message::RemoveCard(card) => {
-                println!("Remove the card: {:?}", card);
-
-                // Save the cards in the extension
-                let _ = data::db::remove_card_from_collection(config, card);
-
-                // Update the list
-                self.extension_progression =
-                    get_extension(config, &self.extension_progression.extension.id);
-                self.filtered_cards_list = self.extension_progression.extension_cards.clone();
-                self.filter_cards_list()
-            }
             Message::UpdateQuantity(card_id, quantity) => {
                 self.quantities.insert(card_id.clone(), quantity.clone());
 
@@ -215,7 +189,6 @@ fn table_row<'a>(
 ) -> TableRow<'a, Message, Theme, iced::Renderer> {
     let mut elements_row = Row::new().padding([0.0, 10.0]);
 
-    // let owned_graphic = if is_owned { text("O") } else { text("X") };
     let owned_graphic = if is_owned {
         Svg::new("resources/done.svg")
     } else {
@@ -223,7 +196,6 @@ fn table_row<'a>(
     };
     elements_row = elements_row.push(
         owned_graphic
-            // .vertical_alignment(iced::alignment::Vertical::Center)
             .width(Length::FillPortion(1))
             .height(Length::Fill),
     );
@@ -257,16 +229,6 @@ fn table_row<'a>(
         Message::UpdateQuantity(card_clone.id, new_text)
     });
 
-    // let card_clone = card.clone();
-    // let quantity_input = number_input(quantity, 100, |value| {
-    //     Message::UpdateQuantity(card_clone.id, value)
-    // });
-    // let mut action_button = if !is_owned {
-    //     button(text("Add")).on_press(Message::AddCard(card.clone()))
-    // } else {
-    //     button(text("Remove")).on_press(Message::RemoveCard(card.clone()))
-    // };
-    // action_button = action_button.padding([0.0, 10.0]);
     let actions_row = row![quantity_input].width(Length::Fixed(100.0));
     elements_row = elements_row.push(actions_row);
 

@@ -144,42 +144,6 @@ pub fn get_extension(config: &Config, extension_id: &str) -> ExtensionProgressio
     }
 }
 
-pub fn remove_card_from_collection(config: &Config, card: Card) -> Result<(), ()> {
-    let connection =
-        Connection::open(config.db_file.clone()).expect("Could open the database file");
-
-    let result = connection.execute(
-        "INSERT INTO 
-            collected_cards (card_id, is_owned)
-        VALUES (?, ?)
-        ON CONFLICT (card_id)
-            DO UPDATE SET is_owned = excluded.is_owned, quantity = quantity - 1",
-        (&card.id, false),
-    );
-
-    println!("{:?}", result);
-
-    Ok(())
-}
-
-pub fn add_card_to_collection(config: &Config, card: Card) -> Result<(), ()> {
-    let connection =
-        Connection::open(config.db_file.clone()).expect("Could open the database file");
-
-    let result = connection.execute(
-        "INSERT INTO 
-            collected_cards (card_id, is_owned)
-        VALUES (?, ?)
-        ON CONFLICT (card_id)
-            DO UPDATE SET is_owned = excluded.is_owned, quantity = excluded.quantity + 1",
-        (&card.id, true),
-    );
-
-    println!("{:?}", result);
-
-    Ok(())
-}
-
 pub fn upsert_card(config: &Config, card: Card) -> Result<(), ()> {
     let connection =
         Connection::open(config.db_file.clone()).expect("Could open the database file");
