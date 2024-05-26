@@ -14,13 +14,37 @@ const CARDS_PER_PAGE: u32 = 15;
 const PAGE_API_URL: &str = "https://en.shadowverse-evolve.com/cards/searchresults_ex?card_name=&class%5B0%5D=all&title=&expansion_name=&cost%5B0%5D=all&card_kind%5B0%5D=all&rare%5B0%5D=all&power_from=&power_to=&hp_from=&hp_to=&type=&ability=&keyword=&view=text&t=1711058152734&_=1711057240616&sort=no";
 const DETAIL_PAGE_URL: &str = "https://en.shadowverse-evolve.com/cards/?cardno=";
 
-pub async fn get_cards(page: u32) -> Result<Vec<String>, ErrorKind> {
-    get_cards_list(page) // Get all the card numbers
-}
-
 pub async fn get_max_page() -> u32 {
     let number_of_cards = get_number_of_cards().await.unwrap();
     number_of_cards.div_ceil(CARDS_PER_PAGE)
+}
+
+pub async fn get_cards(page_index: u32) -> Result<Vec<String>, ErrorKind> {
+    let mut cards_number = Vec::new();
+
+    let response = ureq::get(&format!("{}&page={}", PAGE_API_URL, page_index))
+        .call()
+        .unwrap()
+        .into_string()
+        .map_err(|_| ErrorKind::GetMetadatasError {
+            page_number: page_index,
+        })?;
+    let html = scraper::Html::parse_document(&response);
+    let cards_selector = scraper::Selector::parse("li").unwrap();
+    let html_cards = html.select(&cards_selector);
+    for html_card in html_cards {
+        let card_number = html_card
+            .select(&scraper::Selector::parse(".number").unwrap())
+            .next()
+            .map(|p| p.text().collect::<String>())
+            .ok_or(ErrorKind::GetMetadatasError {
+                page_number: page_index,
+            })?;
+
+        cards_number.push(card_number);
+    }
+
+    Ok(cards_number)
 }
 
 pub fn download_card(card_number: &str, covers_directory: &PathBuf) -> Result<Card, ErrorKind> {
@@ -135,34 +159,6 @@ fn get_from_block_with_text(
 
 fn get_extension_id(card_number: &str) -> &str {
     card_number.split('-').next().unwrap()
-}
-
-fn get_cards_list(page_index: u32) -> Result<Vec<String>, ErrorKind> {
-    let mut cards_number = Vec::new();
-
-    let response = ureq::get(&format!("{}&page={}", PAGE_API_URL, page_index))
-        .call()
-        .unwrap()
-        .into_string()
-        .map_err(|_| ErrorKind::GetMetadatasError {
-            page_number: page_index,
-        })?;
-    let html = scraper::Html::parse_document(&response);
-    let cards_selector = scraper::Selector::parse("li").unwrap();
-    let html_cards = html.select(&cards_selector);
-    for html_card in html_cards {
-        let card_number = html_card
-            .select(&scraper::Selector::parse(".number").unwrap())
-            .next()
-            .map(|p| p.text().collect::<String>())
-            .ok_or(ErrorKind::GetMetadatasError {
-                page_number: page_index,
-            })?;
-
-        cards_number.push(card_number);
-    }
-
-    Ok(cards_number)
 }
 
 fn get_image(card_number: &str, output_directory: &Path) {
