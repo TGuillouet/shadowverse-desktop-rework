@@ -1,5 +1,5 @@
 use crate::{
-    cards::{Card, CardClass, GameExtension},
+    cards::{Card, GameExtension},
     collection::{CollectionCard, ExtensionProgression},
     config::Config,
 };
