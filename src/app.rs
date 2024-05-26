@@ -23,7 +23,7 @@ pub enum ApplicationMessage {
 pub enum AppScreens {
     CardsListUpdater(screens::update::CardsUpdater),
     Extensions(screens::extensions_list::ExtensionsList),
-    CardsList(screens::cards_list::CardsList),
+    CardsList(Box<screens::cards_list::CardsList>),
 }
 
 pub struct IcedApplication {
@@ -39,9 +39,9 @@ impl IcedApplication {
     }
 
     fn navigate_to_progress(&mut self, extension_progression: &ExtensionProgression) {
-        self.screen = AppScreens::CardsList(screens::cards_list::CardsList::new(
+        self.screen = AppScreens::CardsList(Box::new(screens::cards_list::CardsList::new(
             extension_progression.clone(),
-        ))
+        )))
     }
 }
 
@@ -77,7 +77,7 @@ impl Application for IcedApplication {
                     screens::update::Message::CardFetched(event) => match event {
                         screens::update::Event::MetadatasList(total_cards) => {
                             let already_present_in_db = db::get_all_cards_number(&self.config);
-                            if already_present_in_db.len() == total_cards.clone() as usize {
+                            if already_present_in_db.len() == *total_cards as usize {
                                 self.navigate_to_extensions();
                             }
                         }

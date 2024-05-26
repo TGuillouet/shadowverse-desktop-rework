@@ -86,7 +86,7 @@ impl container::StyleSheet for Theme {
 pub enum Button {
     #[default]
     Primary,
-    ExtensionButton,
+    Extension,
     Sidebar,
 }
 
@@ -105,7 +105,7 @@ impl button::StyleSheet for Theme {
                 text_color: self.palette.light_primary,
                 ..Default::default()
             },
-            Button::ExtensionButton => button::Appearance {
+            Button::Extension => button::Appearance {
                 background: Some(self.palette.background.into()),
                 border: Border {
                     color: self.palette.light_primary,
@@ -131,7 +131,7 @@ impl button::StyleSheet for Theme {
     fn hovered(&self, style: &Self::Style) -> button::Appearance {
         let active_style = self.active(style);
         match style {
-            Button::ExtensionButton => button::Appearance {
+            Button::Extension => button::Appearance {
                 border: Border {
                     width: 3.0,
                     ..active_style.border

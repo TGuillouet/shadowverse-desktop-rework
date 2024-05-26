@@ -53,7 +53,7 @@ impl CardsUpdater {
                     self.current_card_index += increment;
                 }
                 Event::Card(card) => {
-                    let _ = db::upsert_card(&config, card.clone());
+                    let _ = db::upsert_card(config, card.clone());
 
                     self.current_card_index += 1;
                     self.current_card_name = card.name;
@@ -149,9 +149,9 @@ fn fetch_single_card(config: Arc<Config>) -> iced::Subscription<Event> {
                     ))
                     .await;
 
-                let mut cards_iter = cards_to_download.iter();
-                while let Some(current_card) = cards_iter.next() {
-                    match cards_updater::download_card(&current_card, &config.covers_directory) {
+                let cards_iter = cards_to_download.iter();
+                for current_card in cards_iter {
+                    match cards_updater::download_card(current_card, &config.covers_directory) {
                         Ok(card) => {
                             let _ = output.send(Event::Card(card)).await;
                         }

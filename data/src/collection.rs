@@ -32,4 +32,5 @@ impl ExtensionProgression {
 pub struct CollectionCard {
     pub card: Card,
     pub is_owned: bool,
+    pub quantity: u8,
 }
