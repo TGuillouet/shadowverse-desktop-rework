@@ -5,7 +5,7 @@
 - [x] Listing each cards of all the currently released extensions of the game
 - [ ] Preview of the cards in the list
 - [ ] Better filters
-- [ ] Quantity tracking
+- [x] Quantity tracking
 - [ ] Deck builder
 
 ## Installation
