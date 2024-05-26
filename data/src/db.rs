@@ -32,6 +32,7 @@ pub fn setup_db(config: &Config) -> Result<(), ()> {
             FOREIGN KEY (card_id) REFERENCES card (id)
         );
         CREATE UNIQUE INDEX IF NOT EXISTS collected_cards_card_id_IDX ON collected_cards (card_id);
+        ALTER TABLE collected_cards ADD COLUMN quantity INTEGER DEFAULT 0;
         COMMIT;",
     );
 
@@ -51,6 +52,7 @@ fn get_extension_cards(connection: &Connection, extension: &GameExtension) -> Ve
             "SELECT 
                 *,
                 cc.is_owned,
+                cc.quantity,
                 e.id as extension_id,
                 e.name as extension_name
             FROM card
@@ -77,6 +79,7 @@ fn get_extension_cards(connection: &Connection, extension: &GameExtension) -> Ve
         let collection_card = CollectionCard {
             card,
             is_owned: row.get_unwrap("is_owned"),
+            quantity: row.get_unwrap("quantity"),
         };
         Ok(collection_card)
     });
@@ -150,7 +153,7 @@ pub fn remove_card_from_collection(config: &Config, card: Card) -> Result<(), ()
             collected_cards (card_id, is_owned)
         VALUES (?, ?)
         ON CONFLICT (card_id)
-            DO UPDATE SET is_owned = excluded.is_owned",
+            DO UPDATE SET is_owned = excluded.is_owned, quantity = quantity - 1",
         (&card.id, false),
     );
 
@@ -168,7 +171,7 @@ pub fn add_card_to_collection(config: &Config, card: Card) -> Result<(), ()> {
             collected_cards (card_id, is_owned)
         VALUES (?, ?)
         ON CONFLICT (card_id)
-            DO UPDATE SET is_owned = excluded.is_owned",
+            DO UPDATE SET is_owned = excluded.is_owned, quantity = excluded.quantity + 1",
         (&card.id, true),
     );
 
@@ -233,4 +236,16 @@ pub fn get_all_cards_number(config: &Config) -> Vec<String> {
         cards.push(card.unwrap());
     }
     cards
+}
+
+pub fn update_card_quantity(config: &Config, card_id: &str, quantity: u8) -> Result<(), ()> {
+    let connection =
+        Connection::open(config.db_file.clone()).expect("Could open the database file");
+
+    let _ = connection.execute(
+        "UPDATE collected_cards SET quantity = ?1, is_owned = (CASE WHEN ?1 > 0 THEN 1 ELSE 0 END) WHERE card_id = ?2",
+        (quantity, &card_id),
+    );
+
+    Ok(())
 }
