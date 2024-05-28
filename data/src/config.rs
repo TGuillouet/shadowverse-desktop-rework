@@ -9,6 +9,7 @@ use crate::environment;
 pub struct Config {
     pub db_file: PathBuf,
     pub covers_directory: PathBuf,
+    pub log_file: PathBuf,
 }
 
 impl Config {
@@ -32,6 +33,7 @@ impl Config {
         Ok(Self {
             db_file: Self::db_file_path(),
             covers_directory: Self::covers_directory().unwrap(),
+            log_file: Self::log_file_path(),
         })
     }
 
@@ -63,6 +65,12 @@ impl Config {
         environment::config_directory()
             .join("shadowverse-collection")
             .join("shadowverse_utils.db")
+    }
+
+    fn log_file_path() -> PathBuf {
+        environment::config_directory()
+            .join("shadowverse-collection")
+            .join("shadowverse-utils.log")
     }
 
     fn covers_directory() -> Result<PathBuf, ConfigError> {

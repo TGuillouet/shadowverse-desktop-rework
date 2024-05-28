@@ -82,13 +82,11 @@ impl CardsList {
                 self.filter_cards_list()
             }
             Message::Selected(card_class) => {
-                println!("Selecting the card class: {:?}", card_class);
                 self.filter_card_class = Some(card_class);
 
                 self.filter_cards_list()
             }
             Message::FilterByName(card_name) => {
-                println!("Name filter: {}", &card_name);
                 self.filter_name = card_name;
 
                 self.filter_cards_list()

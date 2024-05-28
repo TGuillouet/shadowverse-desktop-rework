@@ -60,7 +60,7 @@ impl CardsUpdater {
                 }
                 Event::Finished => {}
                 Event::Error(error) => {
-                    println!("{:?}", error);
+                    tracing::error!("{:?}", error);
                 }
             },
         }

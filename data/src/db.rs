@@ -37,7 +37,7 @@ pub fn setup_db(config: &Config) -> Result<(), ()> {
     );
 
     if let Err(error) = db_setup_result {
-        println!("{}", error);
+        tracing::error!("{:?}", error);
         return Err(());
     }
 
