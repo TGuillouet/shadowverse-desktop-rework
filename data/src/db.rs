@@ -22,7 +22,11 @@ pub fn setup_db(config: &Config) -> Result<(), ()> {
             rarity VARCHAR(50) NOT NULL,
             trait VARCHAR(100) NOT NULL,
             type VARCHAR(50) NOT NULL,
+            hp INTEGER NOT NULL,
+            attack INTEGER NOT NULL,
+            cost INTEGER NOT NULL,
             details TEXT NOT NULL,
+            is_evolved INTEGER NOT NULL,
             extension_id VARCHAR(50),
             FOREIGN KEY (extension_id) REFERENCES extension (id)
         );
@@ -74,6 +78,10 @@ fn get_extension_cards(connection: &Connection, extension: &GameExtension) -> Ve
             card_trait: row.get_unwrap("trait"),
             rarity: row.get_unwrap("rarity"),
             card_type: row.get_unwrap("type"),
+            hp: row.get_unwrap("hp"),
+            attack: row.get_unwrap("attack"),
+            cost: row.get_unwrap("cost"),
+            is_evolved: row.get_unwrap("is_evolved"),
             details: row.get_unwrap("details"),
         };
         let collection_card = CollectionCard {

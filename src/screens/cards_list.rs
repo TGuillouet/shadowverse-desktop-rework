@@ -126,7 +126,7 @@ impl CardsList {
             .extension_cards
             .into_iter()
             .filter(|extension_card| {
-                let name_contains_search = extension_card.card.name.contains(&self.filter_name);
+                let name_contains_search = extension_card.card.name().contains(&self.filter_name);
                 if let Some(class_search) = self.filter_card_class.as_ref() {
                     return name_contains_search && &extension_card.card.card_class == class_search;
                 }
@@ -211,7 +211,7 @@ fn table_row(
         .vertical_alignment(iced::alignment::Vertical::Center);
     elements_row = elements_row.push(card_number);
 
-    let card_name = text(card.name.clone())
+    let card_name = text(card.name().clone())
         .width(Length::FillPortion(4))
         .height(Length::Fill)
         .vertical_alignment(iced::alignment::Vertical::Center);

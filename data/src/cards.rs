@@ -13,8 +13,22 @@ pub struct Card {
     pub card_type: String,
     pub rarity: String,
     pub card_trait: String,
+    pub hp: u8,
+    pub cost: u8,
+    pub attack: u8,
+    pub is_evolved: bool,
     pub details: String,
     pub extension: GameExtension,
+}
+
+impl Card {
+    pub fn name(&self) -> String {
+        if self.is_evolved {
+            return format!("{} - Evolved", self.name);
+        } else {
+            return self.name.clone();
+        }
+    }
 }
 
 #[derive(Debug, Clone)]

@@ -56,7 +56,7 @@ impl CardsUpdater {
                     let _ = db::upsert_card(config, card.clone());
 
                     self.current_card_index += 1;
-                    self.current_card_name = card.name;
+                    self.current_card_name = card.name();
                 }
                 Event::Finished => {}
                 Event::Error(error) => {
@@ -126,7 +126,7 @@ fn fetch_single_card(config: Arc<Config>) -> iced::Subscription<Event> {
 
     subscription::channel(
         std::any::TypeId::of::<DownloadCardsTask>(),
-        0,
+        1,
         move |mut output| async move {
             let Ok(number_of_cards) = get_number_of_cards().await else {
                 let _ = output

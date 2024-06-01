@@ -92,6 +92,9 @@ pub fn download_card(card_number: &str, covers_directory: &PathBuf) -> Result<Ca
             card_number: card_number.to_string(),
         }
     })?;
+
+    let is_evolved = card_type.contains("Evolved");
+
     let card_trait =
         get_from_block_with_text("Trait", &infos).map_err(|_| ErrorKind::DownloadCardError {
             card_number: card_number.to_string(),
@@ -104,6 +107,24 @@ pub fn download_card(card_number: &str, covers_directory: &PathBuf) -> Result<Ca
         get_from_block_with_text("Card Set", &infos).map_err(|_| ErrorKind::DownloadCardError {
             card_number: card_number.to_string(),
         })?;
+
+    let cost = html_card
+        .select(&scraper::Selector::parse(".status span.status-Item-Cost").unwrap())
+        .next()
+        .map(|p| p.text().collect::<String>())
+        .unwrap();
+
+    let defense = html_card
+        .select(&scraper::Selector::parse(".status span.status-Item-Hp").unwrap())
+        .next()
+        .map(|p| p.text().collect::<String>())
+        .unwrap();
+
+    let power = html_card
+        .select(&scraper::Selector::parse(".status span.status-Item-Power").unwrap())
+        .next()
+        .map(|p| p.text().collect::<String>())
+        .unwrap();
 
     let details = html_card
         .select(&scraper::Selector::parse(".detail p").unwrap())
@@ -123,6 +144,10 @@ pub fn download_card(card_number: &str, covers_directory: &PathBuf) -> Result<Ca
         card_type,
         card_trait,
         rarity: card_rarity,
+        hp: defense.parse::<u8>().unwrap_or(0),
+        attack: power.parse::<u8>().unwrap_or(0),
+        cost: cost.parse::<u8>().unwrap_or(0),
+        is_evolved,
         details,
         extension: GameExtension {
             id: extension_id.to_string(),
