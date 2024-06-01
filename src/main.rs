@@ -1,10 +1,8 @@
-use std::fs::OpenOptions;
-
 use data::{config::Config, db::setup_db};
 use iced::{window, Application, Settings, Size};
-use tracing_subscriber::{fmt, layer::SubscriberExt};
 
 mod app;
+mod logger;
 mod screens;
 mod theme;
 mod widget;
@@ -12,15 +10,7 @@ mod widgets;
 
 fn main() -> Result<(), iced::Error> {
     let config = Config::load().unwrap();
-    tracing_subscriber::registry().with(fmt::layer()).with(
-        fmt::layer().with_writer(
-            OpenOptions::new()
-                .append(true)
-                .create(true)
-                .open(config.log_file.clone())
-                .unwrap(),
-        ),
-    );
+    logger::init_logger(config.log_file.clone());
 
     let _ = setup_db(&config);
 

@@ -70,7 +70,7 @@ impl Config {
     fn log_file_path() -> PathBuf {
         environment::config_directory()
             .join("shadowverse-collection")
-            .join("shadowverse-utils.log")
+            .join("logs")
     }
 
     fn covers_directory() -> Result<PathBuf, ConfigError> {
