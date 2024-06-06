@@ -164,10 +164,12 @@ pub fn upsert_card(config: &Config, card: Card) -> Result<(), ()> {
         (&card.extension.id, &card.extension.name),
     );
 
+    tracing::info!("{:?}", card);
+
     let result = connection.execute(
         "INSERT INTO 
-            card (id, name, card_class, rarity, trait, type, details, extension_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            card (id, name, card_class, rarity, trait, type, details, extension_id, hp, cost, attack, is_evolved)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT DO UPDATE SET details = ?7",
         (
             &card.id,
@@ -178,18 +180,25 @@ pub fn upsert_card(config: &Config, card: Card) -> Result<(), ()> {
             &card.card_type,
             &card.details,
             &card.extension.id,
+            &card.hp,
+            &card.cost,
+            &card.attack,
+            &card.is_evolved
         ),
     );
 
-    if result.is_ok() {
-        // Add the card_collection
-        let _ = connection.execute(
-            "INSERT INTO
+    let Ok(_) = result else {
+        tracing::error!("{:?}", result.err());
+        return Err(());
+    };
+
+    // Add the card_collection
+    let _ = connection.execute(
+        "INSERT INTO
                 collected_cards (card_id, is_owned)
             VALUES (?, ?)",
-            (&card.id, false),
-        );
-    }
+        (&card.id, false),
+    );
 
     Ok(())
 }
