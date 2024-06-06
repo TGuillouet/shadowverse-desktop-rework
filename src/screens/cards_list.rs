@@ -7,8 +7,9 @@ use data::{
     db::get_extension,
 };
 use iced::{
+    keyboard::key::Named,
     widget::{column, combo_box, container, row, scrollable, text, text_input, Row, Svg},
-    Command, Length,
+    Command, Length, Subscription,
 };
 use widgets::header::Column;
 use widgets::table_row::TableRow;
@@ -20,6 +21,8 @@ pub enum Message {
     UpdateQuantity(String, String),
     Selected(CardClass),
     FilterByName(String),
+    TabPressed,
+    ShiftTabPressed,
 }
 
 pub struct CardsList {
@@ -91,7 +94,15 @@ impl CardsList {
 
                 self.filter_cards_list()
             }
-        };
+            Message::TabPressed => {
+                println!("Tab released");
+                // TODO: Focus the next quantity text input
+            }
+            Message::ShiftTabPressed => {
+                println!("Shift Tab released");
+                // TODO: Focus the previous quantity text input
+            }
+        }
         Command::none()
     }
 
@@ -142,6 +153,17 @@ impl CardsList {
             quantities.insert(card.id, quantity);
         });
         self.quantities = quantities;
+    }
+
+    pub fn subscription(&self) -> Subscription<Message> {
+        iced::keyboard::on_key_release(|key, modifiers| match key {
+            iced::keyboard::Key::Named(Named::Tab) => Some(if modifiers.shift() {
+                Message::ShiftTabPressed
+            } else {
+                Message::TabPressed
+            }),
+            _ => None,
+        })
     }
 }
 

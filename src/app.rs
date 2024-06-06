@@ -146,6 +146,9 @@ impl Application for IcedApplication {
             AppScreens::CardsListUpdater(screen) => screen
                 .subscription(self.config.clone())
                 .map(ApplicationMessage::CardsListUpdater),
+            AppScreens::CardsList(screen) => {
+                screen.subscription().map(ApplicationMessage::CardsList)
+            }
             _ => Subscription::none(),
         }
     }
