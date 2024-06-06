@@ -2,6 +2,7 @@ use std::{
     fs::File,
     io::BufWriter,
     path::{Path, PathBuf},
+    str::FromStr,
 };
 
 use crate::ErrorKind;
@@ -144,9 +145,9 @@ pub fn download_card(card_number: &str, covers_directory: &PathBuf) -> Result<Ca
         card_type,
         card_trait,
         rarity: card_rarity,
-        hp: defense.parse::<u8>().unwrap_or(0),
-        attack: power.parse::<u8>().unwrap_or(0),
-        cost: cost.parse::<u8>().unwrap_or(0),
+        hp: extract_number_from_str(&defense).parse::<u8>().unwrap_or(0),
+        attack: extract_number_from_str(&power).parse::<u8>().unwrap_or(0),
+        cost: extract_number_from_str(&cost).parse::<u8>().unwrap_or(0),
         is_evolved,
         details,
         extension: GameExtension {
@@ -202,4 +203,14 @@ fn get_image(card_number: &str, output_directory: &Path) {
     let mut out_file = File::create(output_directory.join(format!("{}.png", card_number))).unwrap();
 
     let _ = std::io::copy(&mut response, &mut BufWriter::new(&mut out_file));
+}
+
+fn extract_number_from_str(value: &str) -> &str {
+    let numbers_regex = regex::Regex::from_str("[0-9]+").unwrap();
+
+    let Some(numbers_match) = numbers_regex.find(value) else {
+        return "";
+    };
+
+    numbers_match.as_str()
 }
