@@ -1,8 +1,9 @@
-use std::path::Path;
+use std::{path::Path, str::FromStr};
 
 use tracing::Level;
 use tracing_subscriber::{
-    fmt::writer::MakeWriterExt, layer::SubscriberExt, util::SubscriberInitExt,
+    filter::Directive, fmt::writer::MakeWriterExt, layer::SubscriberExt, util::SubscriberInitExt,
+    EnvFilter,
 };
 
 pub fn init_logger(logs_directory: impl AsRef<Path>) {
@@ -21,5 +22,14 @@ pub fn init_logger(logs_directory: impl AsRef<Path>) {
     let _ = tracing_subscriber::registry()
         .with(console_log)
         .with(log_file_layer)
+        .with(
+            EnvFilter::from_default_env().add_directive(
+                Directive::from_str(&format!(
+                    "{}=INFO",
+                    env!("CARGO_PKG_NAME").replace("-", "_"),
+                ))
+                .unwrap(),
+            ),
+        )
         .try_init();
 }
