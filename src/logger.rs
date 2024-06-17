@@ -16,7 +16,7 @@ pub fn init_logger(logs_directory: impl AsRef<Path>) {
         .with_writer(
             std::io::stderr
                 .with_min_level(Level::WARN)
-                .or_else(std::io::stdout.with_min_level(Level::INFO)),
+                .or_else(std::io::stdout.with_min_level(Level::DEBUG)),
         );
 
     let _ = tracing_subscriber::registry()
@@ -25,7 +25,7 @@ pub fn init_logger(logs_directory: impl AsRef<Path>) {
         .with(
             EnvFilter::from_default_env().add_directive(
                 Directive::from_str(&format!(
-                    "{}=INFO",
+                    "{}=DEBUG",
                     env!("CARGO_PKG_NAME").replace("-", "_"),
                 ))
                 .unwrap(),

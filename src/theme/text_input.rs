@@ -25,7 +25,7 @@ impl text_input::StyleSheet for Theme {
 
     fn focused(&self, _style: &Self::Style) -> text_input::Appearance {
         text_input::Appearance {
-            background: Color::WHITE.into(),
+            background: Color::BLACK.into(),
             border: Border {
                 radius: 4.0.into(),
                 width: 1.0,

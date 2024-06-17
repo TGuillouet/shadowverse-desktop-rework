@@ -35,6 +35,7 @@ pub struct CardsList {
 
     filtered_cards_list: Vec<CollectionCard>,
     quantities: HashMap<String, String>,
+    selected_quantity_textinput_id: Option<String>,
 }
 
 impl CardsList {
@@ -47,7 +48,7 @@ impl CardsList {
             .for_each(|extension_card| {
                 let card = extension_card.card.clone();
                 let quantity = extension_card.quantity.to_string();
-                quantities.insert(card.id, quantity);
+                quantities.insert(card.id.clone(), quantity);
             });
         Self {
             columns: vec![
@@ -56,7 +57,7 @@ impl CardsList {
                 Column::new("Number").width(Length::FillPortion(2)),
                 Column::new("Name").width(Length::FillPortion(4)),
                 Column::new("Class").width(Length::FillPortion(2)),
-                Column::new("Actions").width(Length::Fixed(100.0)),
+                Column::new("Quantity").width(Length::Fixed(100.0)),
             ],
             filtered_cards_list: extension_progression.clone().extension_cards,
             quantities,
@@ -64,6 +65,7 @@ impl CardsList {
             filter_name: String::new(),
             filter_cards_classes: combo_box::State::new(CardClass::ALL.to_vec()),
             filter_card_class: None,
+            selected_quantity_textinput_id: None,
         }
     }
 
@@ -82,28 +84,62 @@ impl CardsList {
                     get_extension(config, &self.extension_progression.extension.id);
                 self.filtered_cards_list
                     .clone_from(&self.extension_progression.extension_cards);
-                self.filter_cards_list()
+                self.filter_cards_list();
+
+                Command::none()
             }
             Message::Selected(card_class) => {
                 self.filter_card_class = Some(card_class);
+                self.filter_cards_list();
 
-                self.filter_cards_list()
+                Command::none()
             }
             Message::FilterByName(card_name) => {
                 self.filter_name = card_name;
+                self.filter_cards_list();
 
-                self.filter_cards_list()
+                Command::none()
             }
             Message::TabPressed => {
-                println!("Tab released");
-                // TODO: Focus the next quantity text input
+                let cards_list = &self.filtered_cards_list.clone();
+
+                // if self.selected_quantity_textinput_id.is_none() {
+                // Select the first one
+                let first_element = cards_list.iter().next().unwrap();
+                let card_id = &first_element.card.id;
+                tracing::info!("Focusing the text input {}", card_id);
+                // self.selected_quantity_textinput_id = Some(card_id.clone());
+                return Command::batch([
+                    text_input::focus(text_input::Id::new("BP01-001EN")),
+                    text_input::select_all(text_input::Id::new(card_id.clone())),
+                ]);
+                // }
+                //
+                // let current_card_id = self.selected_quantity_textinput_id.clone().unwrap();
+                // let position = cards_list
+                //     .iter()
+                //     .position(|card| card.card.id.clone() == current_card_id)
+                //     .unwrap();
+                //
+                // let next = cards_list
+                //     .iter()
+                //     .skip(std::cmp::max(position, 1))
+                //     .next()
+                //     .unwrap();
+                //
+                // tracing::info!("Focusing the text input {}", &next.card.id);
+                // // self.selected_quantity_textinput_id = Some(next.clone().card.id);
+                // return iced::widget::text_input::select_all(iced::widget::text_input::Id::new(
+                //     next.card.id.clone(),
+                // ));
             }
             Message::ShiftTabPressed => {
-                println!("Shift Tab released");
-                // TODO: Focus the previous quantity text input
+                if self.selected_quantity_textinput_id.is_none() {
+                    return Command::none();
+                }
+                Command::none()
             }
         }
-        Command::none()
     }
 
     pub fn view(&self) -> Element<'_, Message> {
@@ -245,10 +281,13 @@ fn table_row(
         .vertical_alignment(iced::alignment::Vertical::Center);
     elements_row = elements_row.push(class);
 
-    let quantity_input = text_input("", &quantity).on_input(|new_text| {
-        let card_clone = card.clone();
-        Message::UpdateQuantity(card_clone.id, new_text)
-    });
+    let quantity_input = text_input("", &quantity)
+        .id(text_input::Id::new(card.id.clone()))
+        .on_input(|new_text| {
+            let card_clone = card.clone();
+            tracing::info!("{:?}", card_clone);
+            Message::UpdateQuantity(card_clone.id, new_text)
+        });
 
     let actions_row = row![quantity_input].width(Length::Fixed(100.0));
     elements_row = elements_row.push(actions_row);

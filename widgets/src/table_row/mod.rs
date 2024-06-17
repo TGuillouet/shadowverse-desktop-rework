@@ -33,6 +33,7 @@ where
 {
     fn children(&self) -> Vec<Tree> {
         vec![Tree::new(&self.content)]
+        // self.content.as_widget().children()
     }
 
     fn diff(&self, tree: &mut Tree) {
@@ -41,6 +42,10 @@ where
 
     fn size(&self) -> iced_core::Size<iced_core::Length> {
         Size::new(Length::Fill, Length::Fixed(self.row_height))
+    }
+
+    fn state(&self) -> iced_core::widget::tree::State {
+        self.content.as_widget().state()
     }
 
     fn layout(
@@ -142,6 +147,18 @@ where
             viewport,
             renderer,
         )
+    }
+
+    fn operate(
+        &self,
+        state: &mut Tree,
+        layout: layout::Layout<'_>,
+        renderer: &Renderer,
+        operation: &mut dyn iced_core::widget::Operation<Message>,
+    ) {
+        self.content
+            .as_widget()
+            .operate(&mut state.children[0], layout, renderer, operation)
     }
 }
 

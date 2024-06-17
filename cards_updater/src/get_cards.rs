@@ -134,7 +134,7 @@ pub fn download_card(card_number: &str, covers_directory: &PathBuf) -> Result<Ca
         .unwrap_or_default()
         .to_string();
 
-    get_image(&card_number, covers_directory);
+    // get_image(&card_number, covers_directory);
 
     let extension_id = get_extension_id(&card_number);
 
@@ -198,7 +198,11 @@ fn get_image(card_number: &str, output_directory: &Path) {
         extension_id, card_number
     );
 
-    let mut response = ureq::get(&image_url).call().unwrap().into_reader();
+    let mut response = ureq::get(&image_url)
+        .set("user-agent", "shadowverse-utils/0.1")
+        .call()
+        .unwrap()
+        .into_reader();
 
     let mut out_file = File::create(output_directory.join(format!("{}.png", card_number))).unwrap();
 
